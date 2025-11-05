@@ -1,6 +1,6 @@
 <div align="center">
      <p align="center">
-          <img src="./fastdocs/src/public/logo.png" width="150" height="150" alt="logo" /> 
+          <img src="https://gitee.com/tao__tao/FastDocs/raw/main/src/public/logo.png" width="150" height="150" alt="logo" /> 
      </p>
      <h1>FastApiAdmin <img src="https://img.shields.io/badge/Version-v2.0.0-blue" alt="Version"></h1>
      <h3>Modern Full-Stack Rapid Development Platform</h3>
@@ -221,39 +221,39 @@ docker compose down
 
 | Module | Screenshot |
 |------------|---------------------------------|
-| Login      | ![Login](./fastdocs/src/public/login.png) |
-| Dashboard  | ![Dashboard](./fastdocs/src/public/dashboard.png) |
-| Analysis   | ![Analysis](./fastdocs/src/public/analysis.png) |
-| Menu       | ![Menu](./fastdocs/src/public/menu.png) |
-| Department | ![Department](./fastdocs/src/public/dept.png) |
-| Position   | ![Position](./fastdocs/src/public/position.png) |
-| Role       | ![Role](./fastdocs/src/public/role.png) |
-| User       | ![User](./fastdocs/src/public/user.png) |
-| Log        | ![Log](./fastdocs/src/public/log.png) |
-| Config     | ![Config](./fastdocs/src/public/config.png) |
-| OnlineUser | ![OnlineUser](./fastdocs/src/public/online.png) |
-| Server     | ![Server](./fastdocs/src/public/service.png) |
-| Cache      | ![Cache](./fastdocs/src/public/cache.png) |
-| Task       | ![Task](./fastdocs/src/public/job.png) |
-| Dict       | ![Dict](./fastdocs/src/public/dict.png) |
-| API Docs   | ![API Docs](./fastdocs/src/public/docs.png) |
-| Theme      | ![Theme](./fastdocs/src/public/theme.png) |
-| Document   | ![Document](./fastdocs/src/public/help.png) |
-| Lock       | ![Lock](./fastdocs/src/public/lock.png) |
-| Form       | ![Form](./fastdocs/src/public/form.png) |
-| Generator  | ![Generator](./fastdocs/src/public/gencode.png) |
-| Workflow   | ![Workflow](./fastdocs/src/public/workflow.png) |
-| File       | ![File](./fastdocs/src/public/file.png) |
-| MyApps    | ![MyApps](./fastdocs/src/public/myapp.png) |
-| Setting  | ![Setting](./fastdocs/src/public/setting.png) |
-| AI       | ![AI](./fastdocs/src/public/ai.png) |
+| Login      | ![Login](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/login.png) |
+| Dashboard  | ![Dashboard](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/dashboard.png) |
+| Analysis   | ![Analysis](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/analysis.png) |
+| Menu       | ![Menu](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/menu.png) |
+| Department | ![Department](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/dept.png) |
+| Position   | ![Position](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/position.png) |
+| Role       | ![Role](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/role.png) |
+| User       | ![User](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/user.png) |
+| Log        | ![Log](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/log.png) |
+| Config     | ![Config](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/config.png) |
+| OnlineUser | ![OnlineUser](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/online.png) |
+| Server     | ![Server](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/service.png) |
+| Cache      | ![Cache](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/cache.png) |
+| Task       | ![Task](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/job.png) |
+| Dict       | ![Dict](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/dict.png) |
+| API Docs   | ![API Docs](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/docs.png) |
+| Theme      | ![Theme](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/theme.png) |
+| Document   | ![Document](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/help.png) |
+| Lock       | ![Lock](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/lock.png) |
+| Form       | ![Form](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/form.png) |
+| Generator  | ![Generator](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/gencode.png) |
+| Workflow   | ![Workflow](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/workflow.png) |
+| File       | ![File](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/file.png) |
+| MyApps    | ![MyApps](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/myapp.png) |
+| Setting  | ![Setting](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/setting.png) |
+| AI       | ![AI](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/ai.png) |
 
 ### Mobile
 
 | Module <div style="width:60px"/> | Details | Module <div style="width:60px"/> | Details | Module <div style="width:60px"/> | Details |
 |----------|------|----------|------|----------|------|
-| Login    | ![Mobile Login](./fastdocs/src/public/app_login.png) | Home      | ![Mobile Home](./fastdocs/src/public/app_home.png) | Profile      | ![Mobile Profile](./fastdocs/src/public/app_mine.png) |
-| Personal  | ![Mobile Personal Info](./fastdocs/src/public/app_profile.png) | Settings   | ![Mobile Settings](./fastdocs/src/public/app_setting.png) | Workbench      | ![Mobile Workbench](./fastdocs/src/public/app_work.png) |
+| Login    | ![Mobile Login](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_login.png) | Home      | ![Mobile Home](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_home.png) | Profile      | ![Mobile Profile](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_mine.png) |
+| Personal  | ![Mobile Personal Info](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_profile.png) | Settings   | ![Mobile Settings](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_setting.png) | Workbench      | ![Mobile Workbench](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_work.png) |
 
 ## 🛠️ Secondary Development Tutorial
 
@@ -383,7 +383,7 @@ Thanks to the contributions and support of the following open-source projects:
 
 | WeChat QR Code | Group QR Code | WeChat Pay QR Code |
 | --- | --- | --- |
-| ![WeChat QR Code](./fastdocs/src/public/wechat.jpg) | ![Group QR Code](./fastdocs/src/public/group.jpg) | ![WeChat Pay QR Code](./fastdocs/src/public/wechatPay.jpg) |
+| ![WeChat QR Code](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/wechat.jpg) | ![Group QR Code](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/group.jpg) | ![WeChat Pay QR Code](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/wechatPay.jpg) |
 
 ## ❤️ Support the Project
 

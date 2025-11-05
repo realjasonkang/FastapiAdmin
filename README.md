@@ -1,6 +1,6 @@
 <div align="center">
      <p align="center">
-          <img src="./fastdocs/src/public/logo.png" width="150" height="150" alt="logo" />  
+          <img src="https://gitee.com/tao__tao/FastDocs/raw/main/src/public/logo.png" width="150" height="150" alt="logo" />  
      </p>
      <h1>FastApiAdmin <sup style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.4em; vertical-align: super; margin-left: 5px;">v2.0.0</h1>
      <h3>现代化全栈快速开发平台</h3>
@@ -223,39 +223,39 @@ docker compose down
 
 | 模块名 <div style="width:60px"/> | 截图 |
 | ----- | --- |
-| 登录     | ![登录](./fastdocs/src/public/login.png) |
-| 仪表盘   | ![仪表盘](./fastdocs/src/public/dashboard.png) |
-| 分析页   | ![分析页](./fastdocs/src/public/analysis.png) |
-| 菜单管理  | ![菜单管理](./fastdocs/src/public/menu.png) |
-| 部门管理  | ![部门管理](./fastdocs/src/public/dept.png) |
-| 岗位管理  | ![岗位管理](./fastdocs/src/public/position.png) |
-| 角色管理  | ![角色管理](./fastdocs/src/public/role.png) |
-| 用户管理  | ![用户管理](./fastdocs/src/public/user.png) |
-| 日志管理  | ![日志管理](./fastdocs/src/public/log.png) |
-| 配置管理  | ![配置管理](./fastdocs/src/public/config.png) |
-| 在线用户  | ![在线用户](./fastdocs/src/public/online.png) |
-| 服务器监控 | ![服务器监控](./fastdocs/src/public/service.png) |
-| 缓存监控  | ![缓存监控](./fastdocs/src/public/cache.png) |
-| 任务管理  | ![任务管理](./fastdocs/src/public/job.png) |
-| 字典管理  | ![字典管理](./fastdocs/src/public/dict.png) |
-| 接口管理  | ![接口管理](./fastdocs/src/public/docs.png) |
-| 系统主题  | ![系统主题](./fastdocs/src/public/theme.png) |
-| 在线文档  | ![在线文档](./fastdocs/src/public/help.png) |
-| 系统锁屏  | ![系统锁屏](./fastdocs/src/public/lock.png) |
-| 表单构建  | ![表单构建](./fastdocs/src/public/form.png) |
-| 代码生成  | ![代码生成](./fastdocs/src/public/gencode.png) |
-| 流程管理  | ![流程管理](./fastdocs/src/public/workflow.png) |
-| 文件管理  | ![文件管理](./fastdocs/src/public/file.png) |
-| 我的应用  | ![我的应用](./fastdocs/src/public/myapp.png) |
-| 配置中心  | ![配置中心](./fastdocs/src/public/setting.png) |
-| 智能助手  | ![智能助手](./fastdocs/src/public/ai.png) |
+| 登录     | ![登录](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/login.png) |
+| 仪表盘   | ![仪表盘](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/dashboard.png) |
+| 分析页   | ![分析页](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/analysis.png) |
+| 菜单管理  | ![菜单管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/menu.png) |
+| 部门管理  | ![部门管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/dept.png) |
+| 岗位管理  | ![岗位管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/position.png) |
+| 角色管理  | ![角色管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/role.png) |
+| 用户管理  | ![用户管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/user.png) |
+| 日志管理  | ![日志管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/log.png) |
+| 配置管理  | ![配置管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/config.png) |
+| 在线用户  | ![在线用户](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/online.png) |
+| 服务器监控 | ![服务器监控](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/service.png) |
+| 缓存监控  | ![缓存监控](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/cache.png) |
+| 任务管理  | ![任务管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/job.png) |
+| 字典管理  | ![字典管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/dict.png) |
+| 接口管理  | ![接口管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/docs.png) |
+| 系统主题  | ![系统主题](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/theme.png) |
+| 在线文档  | ![在线文档](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/help.png) |
+| 系统锁屏  | ![系统锁屏](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/lock.png) |
+| 表单构建  | ![表单构建](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/form.png) |
+| 代码生成  | ![代码生成](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/gencode.png) |
+| 流程管理  | ![流程管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/workflow.png) |
+| 文件管理  | ![文件管理](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/file.png) |
+| 我的应用  | ![我的应用](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/myapp.png) |
+| 配置中心  | ![配置中心](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/setting.png) |
+| 智能助手  | ![智能助手](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/ai.png) |
 
 ### 移动端
 
 | 模块 <div style="width:60px"/> | 详情 | 模块 <div style="width:60px"/> | 详情 | 模块 <div style="width:60px"/> | 详情 |
 |----------|------|----------|------|----------|------|
-| 登录    | ![移动端登录](./fastdocs/src/public/app_login.png) | 首页      | ![移动端首页](./fastdocs/src/public/app_home.png) | 我的      | ![移动端个人中心](./fastdocs/src/public/app_mine.png) |
-| 个人  | ![移动端个人信息](./fastdocs/src/public/app_profile.png) | 设置   | ![移动端设置](./fastdocs/src/public/app_setting.png) | 工作台      | ![移动端工作台](./fastdocs/src/public/app_work.png) |
+| 登录    | ![移动端登录](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_login.png) | 首页      | ![移动端首页](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_home.png) | 我的      | ![移动端个人中心](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_mine.png) |
+| 个人  | ![移动端个人信息](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_profile.png) | 设置   | ![移动端设置](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_setting.png) | 工作台      | ![移动端工作台](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/app_work.png) |
 
 ## 🛠️ 二开教程
 
@@ -383,7 +383,7 @@ docker compose down
 
 | 微信二维码 | 群组二维码 | 微信支付二维码 |
 | --- | --- | --- |
-| ![微信二维码](./fastdocs/src/public/wechat.jpg) | ![群组二维码](./fastdocs/src/public/group.jpg) | ![微信支付二维码](./fastdocs/src/public/wechatPay.jpg) |
+| ![微信二维码](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/wechat.jpg) | ![群组二维码](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/group.jpg) | ![微信支付二维码](https://gitee.com/tao__tao/FastDocs/raw/main/src/public/wechatPay.jpg) |
 
 ## ❤️ 支持项目
 
