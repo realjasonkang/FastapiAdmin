@@ -61,10 +61,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
         
         # 导入并显示最终的启动信息面板
         from app.utils.console import run as console_run
+        from app.common.enums import EnvironmentEnum
         console_run(
             host=settings.SERVER_HOST,
             port=settings.SERVER_PORT,
-            reload=settings.RELOAD,
+            reload=True if settings.ENVIRONMENT == EnvironmentEnum.DEV else False,
             redis_ready=True,
             scheduler_jobs=scheduler_jobs_count,
             scheduler_status=scheduler_status,

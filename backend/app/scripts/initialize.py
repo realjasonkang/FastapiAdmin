@@ -80,12 +80,12 @@ class InitializeData:
             count_result = await db.execute(select(func.count()).select_from(model))
             existing_count = count_result.scalar()
             if existing_count and existing_count > 0:
-                log.error(f"⚠️  跳过 {table_name} 表数据初始化（表已存在 {existing_count} 条记录）")
+                log.warning(f"⚠️  跳过 {table_name} 表数据初始化（表已存在 {existing_count} 条记录）")
                 continue
 
             data = await self.__get_data(table_name)
             if not data:
-                log.error(f"⚠️  跳过 {table_name} 表，无初始化数据")
+                log.warning(f"⚠️  跳过 {table_name} 表，无初始化数据")
                 continue
             
             try:

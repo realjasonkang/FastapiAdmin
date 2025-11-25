@@ -140,11 +140,11 @@ class DiscoverRouter:
         """将顶级模块目录名解析为容器前缀。"""
         if top_module in self.exclude_dirs:
             if self.debug:
-                log.debug(f"⚠️ 目录 {top_module} 被排除")
+                log.warning(f"⚠️ 目录 {top_module} 被排除")
             return None
         if not top_module.startswith(self.module_prefix):
             if self.debug:
-                log.debug(f"⚠️ 目录 {top_module} 不符合前缀约定 {self.module_prefix}")
+                log.warning(f"⚠️ 目录 {top_module} 不符合前缀约定 {self.module_prefix}")
             return None
         
         mapped = self.prefix_map.get(top_module)
@@ -216,12 +216,12 @@ class DiscoverRouter:
                 scanned_files += 1
 
                 if rel_path in self.exclude_files:
-                    log.debug(f"⚠️ 文件 {rel_path} 被排除")
+                    log.warning(f"⚠️ 文件 {rel_path} 被排除")
                     continue
 
                 parts = file.relative_to(base_dir).parts
                 if len(parts) < 2:
-                    log.debug(f"⚠️ 文件路径不完整: {rel_path}，跳过")
+                    log.warning(f"⚠️ 文件路径不完整: {rel_path}，跳过")
                     continue
 
                 top_module = parts[0]
