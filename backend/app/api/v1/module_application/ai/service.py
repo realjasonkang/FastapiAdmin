@@ -3,11 +3,9 @@
 from typing import List, Dict, Optional, Any
 
 from app.core.exceptions import CustomException
-
 from app.api.v1.module_system.auth.schema import AuthSchema
 from .tools.ai_util import AIClient
-from .schema import McpCreateSchema, McpUpdateSchema, McpOutSchema, ChatQuerySchema
-from .param import McpQueryParam
+from .schema import McpCreateSchema, McpUpdateSchema, McpOutSchema, ChatQuerySchema, McpQueryParam
 from .crud import McpCRUD
 
 
@@ -44,9 +42,8 @@ class McpService:
         返回:
         - List[Dict[str, Any]]: MCP服务器详情字典列表
         """
-        if order_by:
-            order_by = eval(str(order_by))
-        obj_list = await McpCRUD(auth).get_list_crud(search=search.__dict__ if search else {}, order_by=order_by)
+        search_dict = search.__dict__ if search else None
+        obj_list = await McpCRUD(auth).get_list_crud(search=search_dict, order_by=order_by)
         return [McpOutSchema.model_validate(obj).model_dump() for obj in obj_list]
     
     @classmethod

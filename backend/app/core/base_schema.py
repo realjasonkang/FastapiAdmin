@@ -34,7 +34,7 @@ class BaseSchema(BaseModel):
     created_time: Optional[DateTimeStr] = Field(default=None, description="创建时间")
     updated_time: Optional[DateTimeStr] = Field(default=None, description="更新时间")
 
-class BaseCreateSchema(BaseModel):
+class UserBySchema(BaseModel):
     """通用创建模型，包含基础字段和审计字段"""
     model_config = ConfigDict(from_attributes=True)
 

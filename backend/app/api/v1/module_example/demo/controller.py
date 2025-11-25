@@ -12,13 +12,12 @@ from app.core.router_class import OperationLogRoute
 from app.core.base_schema import BatchSetAvailable
 from app.core.logger import log
 
-
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .param import DemoQueryParam
 from .service import DemoService
 from .schema import (
     DemoCreateSchema,
-    DemoUpdateSchema
+    DemoUpdateSchema,
+    DemoQueryParam
 )
 
 

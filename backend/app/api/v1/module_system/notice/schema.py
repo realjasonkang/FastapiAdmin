@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from fastapi import Query
 
-from app.core.base_schema import BaseSchema
+from app.core.validator import DateTimeStr
+from app.core.base_schema import BaseSchema, UserBySchema, TenantSchema
 
 
 class NoticeCreateSchema(BaseModel):
@@ -13,6 +16,8 @@ class NoticeCreateSchema(BaseModel):
     notice_content: str = Field(..., description='公告内容')
     status: bool = Field(default=True, description="是否启用(True:启用 False:禁用)")
     description: Optional[str] = Field(default=None, max_length=255, description="描述")
+    start_time: Optional[datetime] = Field(default=None, description="开始时间")
+    end_time: Optional[datetime] = Field(default=None, description="结束时间")
 
     @field_validator("notice_type")
     @classmethod
@@ -27,6 +32,10 @@ class NoticeCreateSchema(BaseModel):
             raise ValueError("公告标题不能为空")
         if not self.notice_content.strip():
             raise ValueError("公告内容不能为空")
+        # 验证时间范围
+        if self.start_time and self.end_time:
+            if self.start_time >= self.end_time:
+                raise ValueError("开始时间必须早于结束时间")
         return self
 
 
@@ -35,6 +44,40 @@ class NoticeUpdateSchema(NoticeCreateSchema):
     ...
 
 
-class NoticeOutSchema(NoticeCreateSchema, BaseSchema):
+class NoticeOutSchema(NoticeCreateSchema, BaseSchema, UserBySchema, TenantSchema):
     """公告通知响应模型"""
     model_config = ConfigDict(from_attributes=True)
+
+
+class NoticeQueryParam:
+    """公告通知查询参数"""
+
+    def __init__(
+        self,
+        notice_title: Optional[str] = Query(None, description="公告标题"),
+        notice_type: Optional[str] = Query(None, description="公告类型"),
+        status: Optional[bool] = Query(None, description="是否可用"),
+        created_id: Optional[int] = Query(None, description="创建人"),
+        start_time: Optional[DateTimeStr] = Query(None, description="创建开始时间", example="2025-01-01 00:00:00"),
+        end_time: Optional[DateTimeStr] = Query(None, description="创建结束时间", example="2025-12-31 23:59:59"),
+        notice_start_time: Optional[DateTimeStr] = Query(None, description="公告开始时间", example="2025-01-01 00:00:00"),
+        notice_end_time: Optional[DateTimeStr] = Query(None, description="公告结束时间", example="2025-12-31 23:59:59"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.notice_title = ("like", notice_title)
+
+        # 精确查询字段
+        self.created_id = created_id
+        self.status = status
+        self.notice_type = notice_type
+
+        # 时间范围查询
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))
+        
+        # 公告有效期查询
+        if notice_start_time:
+            self.start_time = ("ge", notice_start_time)
+        if notice_end_time:
+            self.end_time = ("le", notice_end_time)

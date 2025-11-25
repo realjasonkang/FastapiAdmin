@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from fastapi import APIRouter, Body, Depends, Path, Query
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse, StreamingResponse
 from redis.asyncio.client import Redis
 
@@ -15,13 +15,14 @@ from app.common.request import PaginationService
 from app.utils.common_util import bytes2file_response
 
 from ..auth.schema import AuthSchema
-from .param import DictTypeQueryParam, DictDataQueryParam
 from .service import DictTypeService, DictDataService
 from .schema import (
     DictTypeCreateSchema,
     DictTypeUpdateSchema,
     DictDataCreateSchema,
-    DictDataUpdateSchema
+    DictDataUpdateSchema,
+    DictDataQueryParam, 
+    DictTypeQueryParam
 )
 
 
@@ -29,7 +30,7 @@ DictRouter = APIRouter(route_class=OperationLogRoute, prefix="/dict", tags=["字
 
 @DictRouter.get("/type/detail/{id}", summary="获取字典类型详情", description="获取字典类型详情")
 async def get_type_detail_controller(
-    id: int = Path(..., description="字典类型ID"),
+    id: int = Path(..., description="字典类型ID", ge=1),
     auth: AuthSchema = Depends(AuthPermission(["module_system:dict_type:query"]))
 ) -> JSONResponse:
     """
@@ -56,18 +57,18 @@ async def get_type_list_controller(
     auth: AuthSchema = Depends(AuthPermission(["module_system:dict_type:query"]))
 ) -> JSONResponse:
     """
-    查询字典类型列表
+    查询字典类型
 
     参数:
-    - page (PaginationQueryParam): 分页查询参数模型
+    - page (PaginationQueryParam): 分页参数模型
     - search (DictTypeQueryParam): 查询参数模型
     - auth (AuthSchema): 认证信息模型
         
     返回:
-    - JSONResponse: 包含字典类型列表的响应模型
+    - JSONResponse: 包含查询字典类型结果的响应模型
         
     异常:
-    - CustomException: 查询字典类型列表失败时抛出异常。
+    - CustomException: 查询字典类型失败时抛出异常。
     """
     result_dict_list = await DictTypeService.get_obj_list_service(auth=auth, search=search, order_by=page.order_by)
     result_dict = await PaginationService.paginate(data_list= result_dict_list, page_no= page.page_no, page_size = page.page_size)
@@ -104,7 +105,7 @@ async def create_type_controller(
     创建字典类型
 
     参数:
-    - data (DictTypeCreateSchema): 创建字典类型负载模型
+    - data (DictTypeCreateSchema): 创建字典类型的入参模型
     - redis (Redis): Redis数据库连接
     - auth (AuthSchema): 认证信息模型
         
@@ -122,14 +123,14 @@ async def create_type_controller(
 async def update_type_controller(
     data: DictTypeUpdateSchema,
     redis: Redis = Depends(redis_getter),
-    id: int = Path(..., description="字典类型ID"),
+    id: int = Path(..., description="字典类型ID", ge=1),
     auth: AuthSchema = Depends(AuthPermission(["module_system:dict_type:update"]))
 ) -> JSONResponse:
     """
     修改字典类型
 
     参数:
-    - data (DictTypeUpdateSchema): 修改字典类型负载模型
+    - data (DictTypeUpdateSchema): 修改字典类型的入参模型
     - redis (Redis): Redis数据库连接
     - id (int): 字典类型ID
     - auth (AuthSchema): 认证信息模型
@@ -223,7 +224,7 @@ async def export_type_list_controller(
 
 @DictRouter.get("/data/detail/{id}", summary="获取字典数据详情", description="获取字典数据详情")
 async def get_data_detail_controller(
-    id: int = Path(..., description="字典数据ID"),
+    id: int = Path(..., description="字典数据ID", ge=1),
     auth: AuthSchema = Depends(AuthPermission(["module_system:dict_data:query"]))
 ) -> JSONResponse:
     """

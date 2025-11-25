@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from fastapi import APIRouter, Body, Depends, Path, Query
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.common.response import StreamResponse, SuccessResponse
@@ -12,13 +12,14 @@ from app.core.router_class import OperationLogRoute
 from app.core.logger import log
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .param import JobQueryParam, JobLogQueryParam
+from .tools.ap_scheduler import SchedulerUtil
 from .service import JobService, JobLogService
 from .schema import (
     JobCreateSchema,
-    JobUpdateSchema
+    JobUpdateSchema,
+    JobQueryParam,
+    JobLogQueryParam
 )
-from app.core.ap_scheduler import SchedulerUtil
 
 
 JobRouter = APIRouter(route_class=OperationLogRoute, prefix="/job", tags=["定时任务"])

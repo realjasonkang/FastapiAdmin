@@ -97,6 +97,7 @@ class OperationLogRoute(APIRoute):
             # 获取当前用户ID,如果是登录接口则为空
             log_type = 1 # 1:登录日志 2:操作日志
             current_user_id = None
+            # 优化：只在操作日志场景下获取current_user_id
             if "user_id" in request.scope:
                 current_user_id = request.scope.get("user_id")
                 log_type = 2

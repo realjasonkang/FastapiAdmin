@@ -204,9 +204,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             obj_dict = data if isinstance(data, dict) else data.model_dump()
             obj = self.model(**obj_dict)
             
-            # 设置创建人ID（存在该字段时）
-            if hasattr(obj, "created_id") and self.current_user:
-                setattr(obj, "created_id", self.current_user.id)
+            # 设置字段值（只检查一次current_user）
+            if self.current_user:
+                if hasattr(obj, "created_id"):
+                    setattr(obj, "created_id", self.current_user.id)
+                if hasattr(obj, "updated_id"):
+                    setattr(obj, "updated_id", self.current_user.id)
+                if hasattr(obj, "tenant_id"):
+                    setattr(obj, "tenant_id", self.current_user.tenant_id)
+                if hasattr(obj, "customer_id"):
+                    setattr(obj, "customer_id", self.current_user.customer_id)
             
             self.db.add(obj)
             await self.db.flush()
@@ -234,6 +241,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             obj = await self.get(id=id)
             if not obj:
                 raise CustomException(msg="更新对象不存在")
+            
+            # 设置字段值（只检查一次current_user）
+            if self.current_user:
+                if hasattr(obj, "updated_id"):
+                    setattr(obj, "updated_id", self.current_user.id)
             
             for key, value in obj_dict.items():
                 if hasattr(obj, key):
@@ -391,40 +403,36 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def __loader_options(self, preload: Optional[List[Union[str, Any]]] = None) -> List[Any]:
         """
-        将预加载参数标准化为SQLAlchemy loader options。
-        字符串会转换为selectinload(getattr(self.model, name))；loader option对象将原样返回。
-        若模型定义了 __loader_options__，会作为默认预加载。
-        """
-        # 获取模型默认预加载选项
-        model_defaults = getattr(self.model, "__loader_options__", [])
+        构建预加载选项
         
-        # 确定最终使用的预加载选项
-        final_preload = []
-        if preload is None:
-            # 如果未指定preload，使用模型默认选项
-            final_preload = model_defaults
-        elif preload == []:
-            # 如果preload为空列表，表示不使用任何预加载
-            final_preload = []
-        else:
-            # 如果指定了preload，使用指定的选项（完全替换默认选项）
-            final_preload = preload
+        参数:
+        - preload (Optional[List[Union[str, Any]]]): 预加载关系，支持关系名字符串或SQLAlchemy loader option
             
-        # 转换为SQLAlchemy loader options并去重
-        opts = []
-        added_options = set()
+        返回:
+        - List[Any]: 预加载选项列表
+        """
+        options = []
+        # 获取模型定义的默认加载选项
+        model_loader_options = getattr(self.model, '__loader_options__', [])
         
-        for item in final_preload:
-            if isinstance(item, str):
-                # 字符串类型的预加载选项
-                if item not in added_options and hasattr(self.model, item):
-                    opts.append(selectinload(getattr(self.model, item)))
-                    added_options.add(item)
+        # 合并所有需要预加载的选项
+        all_preloads = set(model_loader_options)
+        if preload:
+            for opt in preload:
+                if isinstance(opt, str):
+                    all_preloads.add(opt)
+        elif preload == []:
+            # 如果明确指定空列表，则不使用任何预加载
+            all_preloads = set()
+        
+        # 处理所有预加载选项
+        for opt in all_preloads:
+            if isinstance(opt, str):
+                # 使用selectinload来避免在异步环境中的MissingGreenlet错误
+                if hasattr(self.model, opt):
+                    options.append(selectinload(getattr(self.model, opt)))
             else:
-                # loader option对象
-                item_str = str(item)
-                if item_str not in added_options and item is not None:
-                    opts.append(item)
-                    added_options.add(item_str)
-                    
-        return opts
+                # 直接使用非字符串的加载选项
+                options.append(opt)
+                
+        return options

@@ -8,12 +8,12 @@ from app.utils.excel_util import ExcelUtil
 
 from ..auth.schema import AuthSchema
 from .crud import RoleCRUD
-from .param import RoleQueryParam
 from .schema import (
     RoleCreateSchema,
     RoleUpdateSchema,
     RolePermissionSettingSchema,
-    RoleOutSchema
+    RoleOutSchema,
+    RoleQueryParam
 )
 
 

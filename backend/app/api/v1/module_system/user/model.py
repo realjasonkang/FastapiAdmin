@@ -115,7 +115,7 @@ class UserModel(ModelMixin, UserMixin, TenantMixin, CustomerMixin):
     github_login: Mapped[str | None] = mapped_column(String(32), nullable=True, comment="Github登录")
     wx_login: Mapped[str | None] = mapped_column(String(32), nullable=True, comment="微信登录")
     qq_login: Mapped[str | None] = mapped_column(String(32), nullable=True, comment="QQ登录")
-    user_type: Mapped[int] = mapped_column(Integer, nullable=False, default=1, comment="用户类型(0:系统用户 1:租户用户 2:客户用户)")
+    user_type: Mapped[str] = mapped_column(String(32), nullable=False, default="0", comment="用户类型(0:系统用户 1:租户用户 2:客户用户)")
     salt: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="加密盐")
     
     dept_id: Mapped[int | None] = mapped_column(

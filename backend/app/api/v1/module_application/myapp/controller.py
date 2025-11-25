@@ -12,11 +12,11 @@ from app.core.base_schema import BatchSetAvailable
 from app.core.logger import log
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .param import ApplicationQueryParam
 from .service import ApplicationService
 from .schema import (
     ApplicationCreateSchema,
-    ApplicationUpdateSchema
+    ApplicationUpdateSchema,
+    ApplicationQueryParam
 )
 
 

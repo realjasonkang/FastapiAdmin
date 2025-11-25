@@ -2,8 +2,10 @@
 
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from fastapi import Query
 
-from app.core.base_schema import BaseSchema
+from app.core.validator import DateTimeStr
+from app.core.base_schema import BaseSchema, TenantSchema
 
 
 class DeptCreateSchema(BaseModel):
@@ -11,8 +13,11 @@ class DeptCreateSchema(BaseModel):
     name: str = Field(..., max_length=40, description="部门名称")
     order: int = Field(default=1, ge=0, description="显示顺序")
     code: Optional[str] = Field(default=None, max_length=60, description="部门编码")
-    status: bool = Field(default=True, description="是否启用(True:启用 False:禁用)")
+    leader: Optional[str] = Field(default=None, max_length=20, description="部门负责人")
+    phone: Optional[str] = Field(default=None, max_length=11, description="手机")
+    email: Optional[str] = Field(default=None, max_length=64, description="邮箱")
     parent_id: Optional[int] = Field(default=None, ge=0, description="父部门ID")
+    status: bool = Field(default=True, description="是否启用(True:启用 False:禁用)")
     description: Optional[str] = Field(default=None, max_length=255, description="备注说明")
 
     @field_validator('name')
@@ -42,8 +47,31 @@ class DeptUpdateSchema(DeptCreateSchema):
     ...
 
 
-class DeptOutSchema(DeptCreateSchema, BaseSchema):
+class DeptOutSchema(DeptCreateSchema, BaseSchema, TenantSchema):
     """部门响应模型"""
     model_config = ConfigDict(from_attributes=True)
     
     parent_name: Optional[str] = Field(default=None, max_length=40, description="父部门名称")
+
+
+class DeptQueryParam:
+    """部门管理查询参数"""
+
+    def __init__(
+            self,
+            name: Optional[str] = Query(None, description="部门名称"),
+            status: Optional[bool] = Query(None, description="部门状态(True正常 False停用)"),
+            start_time: Optional[DateTimeStr] = Query(None, description="开始时间", example="2025-01-01 00:00:00"),
+            end_time: Optional[DateTimeStr] = Query(None, description="结束时间", example="2025-12-31 23:59:59"),
+            
+    ) -> None:
+        
+        # 模糊查询字段
+        self.name = ("like", name)
+
+        # 精确查询字段
+        self.status = status
+
+        # 时间范围查询
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))

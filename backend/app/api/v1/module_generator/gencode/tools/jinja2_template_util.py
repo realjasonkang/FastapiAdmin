@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from jinja2.environment import Environment
-from jinja2 import Environment, FileSystemLoader, select_autoescape, Template
+from jinja2 import Environment, FileSystemLoader, Template
 from typing import List, Any, Set
 
 from app.common.constant import GenConstant

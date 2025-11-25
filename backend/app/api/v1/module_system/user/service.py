@@ -19,7 +19,7 @@ from ..menu.crud import MenuCRUD
 from ..dept.crud import DeptCRUD
 from ..auth.schema import AuthSchema
 from ..menu.schema import MenuOutSchema
-from .param import UserQueryParam
+from ..tenant.service import TenantService
 from .crud import UserCRUD
 from .schema import (
     CurrentUserUpdateSchema,
@@ -29,7 +29,8 @@ from .schema import (
     UserUpdateSchema,
     UserChangePasswordSchema,
     UserRegisterSchema,
-    UserForgetPasswordSchema
+    UserForgetPasswordSchema,
+    UserQueryParam
 )
 
 
@@ -115,6 +116,35 @@ class UserService:
         if data.password:
             data.password = PwdUtil.set_password_hash(password=data.password)
         user_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids"})
+        
+        # 多租户隔离：确保用户正确关联到创建者的租户和客户
+        # 非系统管理员创建的用户，自动继承创建者的租户和客户信息
+        if auth.user and not auth.user.is_superuser:
+            # 检查是否尝试为其他租户创建用户
+            if data.tenant_id and data.tenant_id != auth.user.tenant_id:
+                raise CustomException(msg='没有权限为其他租户创建用户')
+            # 自动设置租户ID
+            user_dict["tenant_id"] = auth.user.tenant_id
+            # 如果创建者是客户用户，自动设置客户ID
+            if auth.user.customer_id:
+                user_dict["customer_id"] = auth.user.customer_id
+            # 限制用户类型，非系统管理员只能创建普通用户
+            user_dict["user_type"] = "0"
+        
+        # 获取要创建用户的租户ID
+        tenant_id = user_dict.get("tenant_id") or (auth.user.tenant_id if auth.user else None)
+        
+        # 执行用户配额检查
+        if tenant_id:
+            try:
+                # 检查该租户的用户配额是否足够
+                await TenantService._check_quota_limit(auth, tenant_id, 'user', 1)
+            except CustomException as e:
+                raise e
+            except Exception as e:
+                log.error(f"用户配额检查失败: {str(e)}")
+        
+        # 创建用户
         new_user = await UserCRUD(auth).create(data=user_dict)
 
         # 设置角色和岗位
@@ -152,6 +182,11 @@ class UserService:
         # 检查是否尝试修改超级管理员
         if user.is_superuser:
             raise CustomException(msg='超级管理员不允许修改')
+        
+        # 多租户权限检查：非系统管理员只能修改同租户的用户
+        if auth.user and not auth.user.is_superuser:
+            if user.tenant_id != auth.user.tenant_id:
+                raise CustomException(msg='没有权限修改其他租户的用户')
 
         # 检查用户名是否重复
         exist_user = await UserCRUD(auth).get_by_username_crud(username=data.username)
@@ -168,22 +203,21 @@ class UserService:
             if exist_email_user and exist_email_user.id != id:
                 raise CustomException(msg='更新失败，邮箱已存在')
         # 检查部门是否存在且可用
-
         if data.dept_id:
             dept = await DeptCRUD(auth).get_by_id_crud(id=data.dept_id)
             if not dept:
                 raise CustomException(msg='部门不存在')
             if not dept.status:
                 raise CustomException(msg='部门已被禁用')
-
+        
         # 更新密码
+        update_dict = {}
         if data.password:
-            data.password = PwdUtil.set_password_hash(password=data.password)
-
-        # 更新用户
-        # user_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids"})
-        # new_user = await UserCRUD(auth).update(id=id, data=user_dict)
-        user_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids", "last_login", "password"})
+            update_dict['password'] = PwdUtil.set_password_hash(password=data.password)
+        
+        # 更新用户 - 排除不应被修改的字段
+        user_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids", "last_login", "password", "tenant_id", "customer_id", "user_type"})
+        user_dict.update(update_dict)
         new_user = await UserCRUD(auth).update(id=id, data=user_dict)
 
         # 更新角色和岗位
@@ -232,6 +266,11 @@ class UserService:
                 raise CustomException(msg="用户已启用,不能删除")
             if auth.user and auth.user.id == id:
                 raise CustomException(msg="不能删除当前登陆用户")
+            
+            # 多租户权限检查：非系统管理员只能删除同租户的用户
+            if auth.user and not auth.user.is_superuser:
+                if user.tenant_id != auth.user.tenant_id:
+                    raise CustomException(msg='没有权限删除其他租户的用户')
         # 删除用户角色关联数据
         await UserCRUD(auth).set_user_roles_crud(user_ids=ids, role_ids=[])
         
@@ -439,6 +478,20 @@ class UserService:
         data.password = PwdUtil.set_password_hash(password=data.password)
         data.name = data.username
         create_dict = data.model_dump(exclude_unset=True, exclude={"role_ids", "position_ids"})
+        
+        # 设置默认用户类型为普通用户
+        create_dict.setdefault("user_type", "0")
+        
+        # 设置创建人ID
+        if auth.user and auth.user.id:
+            create_dict["created_id"] = auth.user.id
+            # 多租户隔离：如果是租户用户注册，自动关联到当前租户
+            if auth.user.tenant_id:
+                create_dict["tenant_id"] = auth.user.tenant_id
+                # 如果是客户用户注册，自动关联到当前客户
+                if auth.user.customer_id:
+                    create_dict["customer_id"] = auth.user.customer_id
+        
         result = await UserCRUD(auth).create(data=create_dict)
         if data.role_ids:
             await UserCRUD(auth).set_user_roles_crud(user_ids=[result.id], role_ids=data.role_ids)

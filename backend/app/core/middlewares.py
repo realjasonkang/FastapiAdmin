@@ -93,10 +93,12 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
             
             # 检查是否需要拦截请求
             should_block = False
+            block_reason = ""
             
             # 1. 首先检查IP是否在黑名单中
             if request_ip and request_ip in ip_black_list:
                 should_block = True
+                block_reason = f"IP地址 {request_ip} 在黑名单中"
             
             # 2. 如果不在黑名单中，检查是否在演示模式下需要拦截
             elif demo_enable in ["true", "True"] and request.method != "GET":
@@ -106,8 +108,18 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
                 
                 if not is_ip_whitelisted and not is_path_whitelisted:
                     should_block = True
+                    block_reason = f"演示模式下拦截非GET请求，IP: {request_ip}, 路径: {path}"
             
             if should_block:
+                # 增强安全审计：记录详细的拦截日志
+                log.warning([
+                    f"请求被拦截: {block_reason}",
+                    f"请求来源: {request_ip}",
+                    f"请求方法: {request.method}",
+                    f"请求路径: {path}",
+                    f"用户代理: {request.headers.get('user-agent', '未知')}",
+                    f"演示模式: {demo_enable}"
+                ])
                 # 拦截请求
                 return ErrorResponse(msg="演示环境，禁止操作")
             else:
@@ -143,4 +155,3 @@ class CustomGZipMiddleware(GZipMiddleware):
             minimum_size=settings.GZIP_MIN_SIZE,
             compresslevel=settings.GZIP_COMPRESS_LEVEL
         )
-

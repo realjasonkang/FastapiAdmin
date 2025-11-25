@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from typing import Optional
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.core.validator import DateTimeStr
 from app.core.base_schema import BaseSchema
+from app.core.validator import DateTimeStr
 
 
 class TenantCreateSchema(BaseModel):
@@ -12,7 +15,13 @@ class TenantCreateSchema(BaseModel):
     code: Optional[str] = Field(default=None, max_length=20, description='租户编码')
     status: bool = Field(True, description="是否启用(True:启用 False:禁用)")
     description: Optional[str] = Field(default=None, max_length=255, description="描述")
-
+    start_time: Optional[DateTimeStr] = Field(default=None, description="开始时间")
+    end_time: Optional[DateTimeStr] = Field(default=None, description="结束时间")
+    
+    # 租户配额设置 - 只保留用户数量限制
+    max_user_count: Optional[int] = Field(default=100, ge=0, description='最大用户数量限制')
+    enable_quota_limit: bool = Field(True, description='是否启用配额限制')
+    
     @field_validator('name')    
     @classmethod
     def _validate_name(cls, v: str) -> str:
@@ -35,11 +44,39 @@ class TenantCreateSchema(BaseModel):
         
         return self
 
+
 class TenantUpdateSchema(TenantCreateSchema):
     """更新模型"""
-    ...
+    name: Optional[str] = Field(None, max_length=64, description='租户名称')
+    code: Optional[str] = Field(None, max_length=20, description='租户编码')
 
 
 class TenantOutSchema(TenantCreateSchema, BaseSchema):
     """响应模型"""
     model_config = ConfigDict(from_attributes=True)
+    
+    # 租户使用统计字段 - 只保留用户数量统计
+    current_user_count: Optional[int] = Field(default=0, description='当前用户数量')
+
+
+class TenantQueryParam:
+    """租户查询参数"""
+
+    def __init__(
+        self,
+        name: Optional[str] = Query(None, description="租户名称"),
+        status: Optional[bool] = Query(None, description="状态用(True:启用 False:禁用)"),
+        start_time: Optional[DateTimeStr] = Query(None, description="开始时间", example="2025-01-01 00:00:00"),
+        end_time: Optional[DateTimeStr] = Query(None, description="结束时间", example="2025-12-31 23:59:59"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.name = ("like", name)
+
+        # 精确查询字段
+        self.status = status
+
+        # 时间范围查询
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))
+

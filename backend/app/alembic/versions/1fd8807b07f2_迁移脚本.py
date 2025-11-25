@@ -1,8 +1,8 @@
 """迁移脚本
 
-Revision ID: c3d2c711c360
+Revision ID: 1fd8807b07f2
 Revises: 
-Create Date: 2025-11-24 01:00:50.173218
+Create Date: 2025-11-26 00:29:59.186660
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision: str = 'c3d2c711c360'
+revision: str = '1fd8807b07f2'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

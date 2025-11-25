@@ -14,11 +14,11 @@ from app.utils.common_util import (
 
 from ..auth.schema import AuthSchema
 from .crud import DeptCRUD
-from .param import DeptQueryParam
 from .schema import (
     DeptCreateSchema,
     DeptUpdateSchema,
-    DeptOutSchema
+    DeptOutSchema,
+    DeptQueryParam
 )
 
 
@@ -40,11 +40,12 @@ class DeptService:
         - Dict: 部门详情对象。
         """
         dept = await DeptCRUD(auth).get_by_id_crud(id=id)
+        result = DeptOutSchema.model_validate(dept).model_dump()
         if dept and dept.parent_id:
             parent = await DeptCRUD(auth).get(id=dept.parent_id)
             if parent:
-                DeptOutSchema.parent_name = parent.name
-        return DeptOutSchema.model_validate(dept).model_dump()
+                result['parent_name'] = parent.name
+        return result
 
     @classmethod
     async def get_dept_tree_service(cls, auth: AuthSchema, search: Optional[DeptQueryParam]= None, order_by: Optional[List[Dict]] = None) -> List[Dict]:
@@ -87,6 +88,9 @@ class DeptService:
         obj = await DeptCRUD(auth).get(code=data.code)
         if obj:
             raise CustomException(msg='创建失败，编码已存在')
+        # 检测循环引用
+        if data.parent_id:
+            await cls._check_circular_reference(auth, data.parent_id, id=None)
         dept = await DeptCRUD(auth).create(data=data)
         return DeptOutSchema.model_validate(dept).model_dump()
 
@@ -112,12 +116,44 @@ class DeptService:
         exist_dept = await DeptCRUD(auth).get(name=data.name)
         if exist_dept and exist_dept.id != id:
             raise CustomException(msg='更新失败，部门名称重复')
+        # 检测循环引用
+        if data.parent_id is not None:
+            await cls._check_circular_reference(auth, data.parent_id, id=id)
         dept = await DeptCRUD(auth).update(id=id, data=data)
-        if data.status:
-            await cls.batch_set_available_service(auth=auth, data=BatchSetAvailable(ids=[id], status=True))
-        else:
-            await cls.batch_set_available_service(auth=auth, data=BatchSetAvailable(ids=[id], status=False))
         return DeptOutSchema.model_validate(dept).model_dump()
+
+    @classmethod
+    async def _check_circular_reference(cls, auth: AuthSchema, parent_id: int, id: Optional[int] = None) -> None:
+        """
+        检测部门层级循环引用
+        
+        参数:
+        - auth (AuthSchema): 认证对象
+        - parent_id (int): 父部门ID
+        - id (Optional[int]): 当前部门ID（用于更新时检测）
+        
+        异常:
+        - CustomException: 当检测到循环引用时抛出
+        """
+        if parent_id == id:
+            raise CustomException(msg='更新失败，不能将部门设置为自己的子部门')
+        
+        # 获取所有部门信息用于检测循环引用
+        all_depts = await DeptCRUD(auth).get_list_crud()
+        parent_map = {dept.id: dept.parent_id for dept in all_depts}
+        
+        # 检查循环引用
+        current_id = parent_id
+        visited = set()
+        
+        while current_id and current_id not in visited:
+            visited.add(current_id)
+            if current_id == id:
+                raise CustomException(msg='更新失败，检测到部门层级循环引用')
+            current_id = parent_map.get(current_id)
+        
+        if current_id == id:
+            raise CustomException(msg='更新失败，检测到部门层级循环引用')
 
     @classmethod
     async def delete_dept_service(cls, auth: AuthSchema, ids: list[int]) -> None:

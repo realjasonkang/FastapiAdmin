@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 from app.core.base_schema import BatchSetAvailable
 from app.core.exceptions import CustomException
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .schema import ApplicationCreateSchema, ApplicationUpdateSchema, ApplicationOutSchema
-from .param import ApplicationQueryParam
+from .schema import (
+    ApplicationCreateSchema,
+    ApplicationUpdateSchema,
+    ApplicationOutSchema,
+    ApplicationQueryParam
+)
 from .crud import ApplicationCRUD
 
 
@@ -41,16 +45,13 @@ class ApplicationService:
         参数:
         - auth (AuthSchema): 认证信息模型
         - search (Optional[ApplicationQueryParam]): 查询参数模型
-        - order_by (Optional[List[Dict[str, str]]]): 排序参数列表
+        - order_by (Optional[Union[str, List[Dict[str, str]]]]): 排序参数，支持字符串或字典列表
         
         返回:
         - List[Dict]: 应用详情字典列表
         """
-        if order_by:
-            order_by = eval(order_by) if isinstance(order_by, str) else order_by
-        
         # 过滤空值
-        search_dict = {k: v for k, v in search.__dict__.items() if v is not None} if search else {}
+        search_dict = search.__dict__ if search else None
         obj_list = await ApplicationCRUD(auth).list_crud(search=search_dict, order_by=order_by)
         return [ApplicationOutSchema.model_validate(obj).model_dump() for obj in obj_list]
     

@@ -8,7 +8,8 @@ from app.common.enums import RedisInitKeyConfig
 from app.core.redis_crud import RedisCURD
 from app.core.security import decode_access_token
 from app.core.logger import log
-from .param import OnlineQueryParam
+
+from .schema import OnlineQueryParam
 
 
 class OnlineService:

@@ -2,9 +2,11 @@
 
 import re
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from fastapi import Query
 
-from app.core.base_schema import BaseSchema
+from app.core.validator import DateTimeStr
+from app.core.base_schema import BaseSchema, UserBySchema, TenantSchema, CustomerSchema
 
 
 class OperationLogCreateSchema(BaseModel):
@@ -20,6 +22,7 @@ class OperationLogCreateSchema(BaseModel):
     response_code: Optional[int] = Field(default=None, description="响应状态码")
     response_json: Optional[str] = Field(default=None, description="响应 JSON 数据")
     process_time: Optional[str] = Field(default=None, description="处理时间")
+    status: Optional[bool] = Field(default=True, description="是否成功")
     description: Optional[str] = Field(default=None, max_length=255, description="描述")
     created_id: Optional[int] = Field(default=None, description="创建人ID")
 
@@ -54,6 +57,40 @@ class OperationLogCreateSchema(BaseModel):
         return value
 
 
-class OperationLogOutSchema(OperationLogCreateSchema, BaseSchema):
+class OperationLogOutSchema(OperationLogCreateSchema, BaseSchema, UserBySchema, TenantSchema, CustomerSchema):
     """日志响应模型"""
     model_config = ConfigDict(from_attributes=True)
+
+
+class OperationLogQueryParam:
+    """操作日志查询参数"""
+
+    def __init__(
+        self,
+        type: Optional[int] = Query(None, description="日志类型(1:登录日志, 2:操作日志)"),
+        request_path: Optional[str] = Query(None, description="请求路径"),
+        request_method: Optional[str] = Query(None, description="请求方法"),
+        request_ip: Optional[str] = Query(None, description="请求IP"),
+        response_code: Optional[int] = Query(None, description="响应状态码"),
+        created_id: Optional[int] = Query(None, description="创建人"),
+        start_time: Optional[DateTimeStr] = Query(None, description="开始时间", example="2025-01-01 00:00:00"),
+        end_time: Optional[DateTimeStr] = Query(None, description="结束时间", example="2025-12-31 23:59:59"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.request_path = ("like", f"%{request_path}%") if request_path else None
+        
+        # 精确查询字段
+        self.created_id = created_id
+        self.request_method = request_method
+        self.request_ip = request_ip
+        self.response_code = response_code
+        self.type = type
+        
+        # 时间范围查询 - 增加对单个时间参数的处理
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))
+        elif start_time:
+            self.created_time = (">=", start_time)
+        elif end_time:
+            self.created_time = ("<=", end_time)

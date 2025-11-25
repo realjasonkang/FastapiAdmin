@@ -14,10 +14,10 @@ from app.core.logger import log
 
 from ..auth.schema import AuthSchema
 from .service import PositionService
-from .param import PositionQueryParam
 from .schema import (
     PositionCreateSchema,
-    PositionUpdateSchema
+    PositionUpdateSchema,
+    PositionQueryParam
 )
 
 

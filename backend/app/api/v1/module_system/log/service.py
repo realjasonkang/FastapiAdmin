@@ -6,11 +6,11 @@ from app.core.exceptions import CustomException
 from app.utils.excel_util import ExcelUtil
 
 from ..auth.schema import AuthSchema
-from .param import OperationLogQueryParam
 from .crud import OperationLogCRUD
 from .schema import (
     OperationLogCreateSchema,
-    OperationLogOutSchema
+    OperationLogOutSchema,
+    OperationLogQueryParam
 )
 
 
@@ -47,7 +47,8 @@ class OperationLogService:
         
         返回:
         - List[Dict]: 日志详情字典列表
-        """            
+        """
+            
         log_list = await OperationLogCRUD(auth).get_list_crud(search=search.__dict__, order_by=order_by)
         log_dict_list = [OperationLogOutSchema.model_validate(log).model_dump() for log in log_list]
         return log_dict_list
@@ -121,8 +122,8 @@ class OperationLogService:
         for item in data:
             # 处理状态
             item['response_code'] = '成功' if item.get('response_code') == 200 else '失败'
-            # 处理日志类型
-            item['type'] = '操作日志' if item.get('type') == 1 else '登录日志'
+            # 处理日志类型 - 修正与schema.py保持一致
+            item['type'] = '登录日志' if item.get('type') == 1 else '操作日志'
             item['creator'] = item.get('creator', {}).get('name', '未知') if isinstance(item.get('creator'), dict) else '未知'
 
         return ExcelUtil.export_list2excel(list_data=data, mapping_dict=mapping_dict)

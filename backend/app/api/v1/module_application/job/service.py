@@ -2,14 +2,19 @@
 
 from typing import Any, List, Dict, Optional
 
-from app.core.ap_scheduler import SchedulerUtil
 from app.core.exceptions import CustomException
 from app.utils.cron_util import CronUtil
 from app.utils.excel_util import ExcelUtil
-
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .schema import JobCreateSchema, JobUpdateSchema, JobOutSchema, JobLogOutSchema
-from .param import JobQueryParam, JobLogQueryParam
+from .tools.ap_scheduler import SchedulerUtil
+from .schema import (
+    JobCreateSchema,
+    JobUpdateSchema,
+    JobOutSchema,
+    JobLogOutSchema,
+    JobQueryParam,
+    JobLogQueryParam
+)
 from .crud import JobCRUD, JobLogCRUD
 
 
@@ -114,7 +119,7 @@ class JobService:
             if obj:
                 raise CustomException(msg=f'删除失败，该定时任务存 {exist_obj.name} 在日志记录')
 
-            SchedulerUtil.remove_job(job_id=id)
+            SchedulerUtil().remove_job(job_id=id)
         await JobCRUD(auth).delete_obj_crud(ids=ids)
         
 
@@ -152,7 +157,7 @@ class JobService:
             await JobCRUD(auth).set_obj_field_crud(ids=[id], status=True)
         elif option == 3:
             # 重启任务：先移除再添加，确保使用最新的任务配置
-            SchedulerUtil.remove_job(job_id=id)
+            SchedulerUtil().remove_job(job_id=id)
             # 获取最新的任务配置
             updated_job = await JobCRUD(auth).get_obj_by_id_crud(id=id)
             if updated_job:

@@ -138,11 +138,17 @@ class LoginService:
         refresh_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
         
         now = datetime.now()
+        
+        # 记录租户信息到日志
+        log.info(f"用户ID: {user.id}, 用户名: {user.username}, 租户ID: {user.tenant_id} 正在生成JWT令牌")
+        
+        # 生成会话信息
         session_info=OnlineOutSchema(
             session_id=session_id,
             user_id=user.id, 
             name=user.name,
             user_name=user.username,
+            tenant_name=user.tenant.name if user.tenant else None,  # 显式包含租户名称
             ipaddr=request_ip,
             login_location=login_location,
             os=user_agent.os.family,
@@ -214,6 +220,9 @@ class LoginService:
         # 用户认证
         auth = AuthSchema(db=db)
         user = await UserCRUD(auth).get_by_id_crud(id=user_id)
+        
+        # 记录刷新令牌时的租户信息
+        log.info(f"用户ID: {user.id}, 用户名: {user.username}, 租户ID: {user.tenant_id} 正在刷新JWT令牌")
 
         # 设置新的 token
         access_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -226,12 +235,14 @@ class LoginService:
             sub=session_info_json,
             is_refresh=False,
             exp=now + access_expires,
+            tenant_id=user.tenant_id
         ))
 
         refresh_token_new = create_access_token(payload=JWTPayloadSchema(
             sub=session_info_json,
             is_refresh=True,
             exp=now + refresh_expires,
+            tenant_id=user.tenant_id
         ))
         
         # 覆盖写入 Redis
@@ -246,12 +257,12 @@ class LoginService:
             value=refresh_token_new,
             expire=int(refresh_expires.total_seconds())
         )
-
+        
         return JWTOutSchema(
             access_token=access_token,
             refresh_token=refresh_token_new,
-            expires_in=int(access_expires.total_seconds()),
-            token_type=settings.TOKEN_TYPE
+            token_type=settings.TOKEN_TYPE,
+            expires_in=int(access_expires.total_seconds())
         )
 
     @classmethod

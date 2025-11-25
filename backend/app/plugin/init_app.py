@@ -15,13 +15,13 @@ from fastapi_limiter.depends import RateLimiter
 from math import ceil
 
 from app.config.setting import settings
-from app.core.ap_scheduler import SchedulerUtil
 from app.core.logger import log
 from app.core.discover import router
 from app.core.exceptions import CustomException, handle_exception
 from app.utils.common_util import import_module, import_modules_async
 from app.scripts.initialize import InitializeData
 
+from app.api.v1.module_application.job.tools.ap_scheduler import SchedulerUtil
 from app.api.v1.module_system.params.service import ParamsService
 from app.api.v1.module_system.dict.service import DictDataService
 

@@ -2,8 +2,9 @@
 
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from fastapi import Query
 
-from app.core.base_schema import BaseSchema
+from app.core.base_schema import BaseSchema, UserBySchema, TenantSchema
 
 
 class GenDBTableSchema(BaseModel):
@@ -51,7 +52,7 @@ class GenTableSchema(BaseModel):
         return v
 
 
-class GenTableOutSchema(GenTableSchema, BaseSchema):
+class GenTableOutSchema(GenTableSchema, BaseSchema, UserBySchema, TenantSchema):
     """业务表输出模型（面向控制器/前端）。
     """
     model_config = ConfigDict(from_attributes=True)
@@ -89,10 +90,39 @@ class GenTableColumnSchema(BaseModel):
     sort: int = Field(default=0, description='排序')
 
 
-class GenTableColumnOutSchema(GenTableColumnSchema, BaseSchema):
+class GenTableColumnOutSchema(GenTableColumnSchema, BaseSchema, UserBySchema, TenantSchema):
     """
     业务表字段输出模型
     """
     model_config = ConfigDict(from_attributes=True)
 
     super_column: Optional[str] = Field(default='0', description='是否为基类字段（1是 0否）')
+
+
+class GenTableQueryParam:
+    """代码生成业务表查询参数
+    - 支持按`table_name`、`table_comment`进行模糊检索（由CRUD层实现like）。
+    - 空值将被忽略，不参与过滤。
+    """
+
+    def __init__(
+        self,
+        table_name: Optional[str] = Query(None, description="表名称"),
+        table_comment: Optional[str] = Query(None, description="表注释"),
+    ) -> None:
+        # 模糊查询字段
+        self.table_name = table_name
+        self.table_comment = table_comment
+
+
+class GenTableColumnQueryParam:
+    """代码生成业务表字段查询参数
+    - `column_name`按like规则模糊查询（透传到CRUD层）
+    """
+
+    def __init__(
+        self,
+        column_name: Optional[str] = Query(None, description="列名称"),
+    ) -> None:
+        # 模糊查询字段：约定("like", 值)格式，便于CRUD解析
+        self.column_name = ("like", column_name)

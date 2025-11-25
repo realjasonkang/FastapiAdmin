@@ -11,8 +11,7 @@ from app.utils.excel_util import ExcelUtil
 from app.core.logger import log
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .schema import CustomerCreateSchema, CustomerUpdateSchema, CustomerOutSchema
-from .param import CustomerQueryParam
+from .schema import CustomerCreateSchema, CustomerUpdateSchema, CustomerOutSchema, CustomerQueryParam
 from .crud import CustomerCRUD
 
 

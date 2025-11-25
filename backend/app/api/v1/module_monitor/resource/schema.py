@@ -4,6 +4,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from urllib.parse import urlparse
+from fastapi import Query
 
 
 class ResourceItemSchema(BaseModel):
@@ -138,3 +139,19 @@ class ResourceCreateDirSchema(BaseModel):
             if '..' in value or value.startswith('/') or value.startswith('\\'):
                 raise ValueError("参数包含不安全字符")
         return value.strip()
+
+
+class ResourceSearchQueryParam:
+    """资源搜索查询参数"""
+
+    def __init__(
+        self,
+        name: Optional[str] = Query(None, description="搜索关键词"),
+        path: Optional[str] = Query(None, description="目录路径"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.name = ("like", name) if name else None
+        
+        # 精确查询字段
+        self.path = path

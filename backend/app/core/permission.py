@@ -74,7 +74,7 @@ class Permission:
         """
         if (hasattr(self.model, "tenant_id") and 
             hasattr(self.current_user, "user_type") and 
-            self.current_user.user_type != 0):  # 非系统用户
+            self.current_user.user_type != "0"):  # 非系统用户
             
             user_tenant_id = getattr(self.current_user, "tenant_id", None)
             if user_tenant_id is not None:
@@ -89,7 +89,7 @@ class Permission:
             user_customer_id = getattr(self.current_user, "customer_id", None)
             # 客户用户类型为2
             if (hasattr(self.current_user, "user_type") and 
-                self.current_user.user_type == 2 and 
+                self.current_user.user_type == "2" and 
                 user_customer_id is not None):
                 
                 self.conditions.append(getattr(self.model, "customer_id") == user_customer_id)
@@ -227,7 +227,7 @@ class Permission:
     
     async def _get_child_dept_ids(self, dept_id: int) -> List[int]:
         """
-        获取指定部门的所有子部门ID
+        获取指定部门的所有子部门ID（应用租户隔离）
         
         Args:
             dept_id: 部门ID
@@ -238,6 +238,14 @@ class Permission:
         try:
             # 查询所有部门以构建部门树
             dept_sql = select(DeptModel)
+            
+            # 应用租户隔离，确保用户只能看到自己租户的部门
+            if (hasattr(self.current_user, "user_type") and 
+                self.current_user.user_type != "0"):  # 非系统用户
+                user_tenant_id = getattr(self.current_user, "tenant_id", None)
+                if user_tenant_id is not None:
+                    dept_sql = dept_sql.where(DeptModel.tenant_id == user_tenant_id)
+            
             dept_result = await self.db.execute(dept_sql)
             dept_objs = dept_result.scalars().all()
             

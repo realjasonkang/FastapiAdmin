@@ -10,13 +10,13 @@ from app.config.setting import settings
 from app.core.base_crud import CRUDBase
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .param import GenTableQueryParam
 from .model import GenTableModel, GenTableColumnModel
 from .schema import (
     GenTableSchema,
     GenTableColumnSchema,
     GenTableColumnOutSchema,
     GenDBTableSchema,
+    GenTableQueryParam
 )
 
 

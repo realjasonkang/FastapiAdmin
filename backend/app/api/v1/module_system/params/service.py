@@ -17,8 +17,7 @@ from app.core.exceptions import CustomException
 from app.core.logger import log
 
 from ..auth.schema import AuthSchema
-from .param import ParamsQueryParam
-from .schema import ParamsOutSchema, ParamsUpdateSchema, ParamsCreateSchema
+from .schema import ParamsOutSchema, ParamsUpdateSchema, ParamsCreateSchema, ParamsQueryParam
 from .crud import ParamsCRUD
 
 

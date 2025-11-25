@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from fastapi import APIRouter, Body, Depends, Path, Query
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.common.response import StreamResponse, SuccessResponse
@@ -13,11 +13,11 @@ from app.common.request import PaginationService
 from app.utils.common_util import bytes2file_response
 
 from ..auth.schema import AuthSchema
-from .param import NoticeQueryParam
 from .service import NoticeService
 from .schema import (
     NoticeCreateSchema,
-    NoticeUpdateSchema
+    NoticeUpdateSchema,
+    NoticeQueryParam
 )
 
 
@@ -168,7 +168,6 @@ async def export_obj_list_controller(
             'Content-Disposition': 'attachment; filename=notice.xlsx'
         }
     )
-
 
 @NoticeRouter.get("/available", summary="获取全局启用公告", description="获取全局启用公告")
 async def get_obj_list_available_controller(

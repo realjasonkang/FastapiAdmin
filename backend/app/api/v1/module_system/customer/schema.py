@@ -2,14 +2,18 @@
 
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from fastapi import Query
 
-from app.core.base_schema import BaseSchema
+from app.core.validator import DateTimeStr
+from app.core.base_schema import BaseSchema, UserBySchema, TenantSchema, CustomerSchema
 
 
 class CustomerCreateSchema(BaseModel):
     """新增模型"""
     name: str = Field(..., max_length=64, description='客户名称')
     code: Optional[str] = Field(default=None, max_length=20, description='客户编码')    
+    start_time: Optional[DateTimeStr] = Field(default=None, description="开始时间", example="2025-01-01 00:00:00")
+    end_time: Optional[DateTimeStr] = Field(default=None, description="结束时间", example="2025-12-31 23:59:59")
     status: bool = Field(True, description="是否启用(True:启用 False:禁用)")
     description: Optional[str] = Field(default=None, max_length=255, description="描述")
 
@@ -35,11 +39,36 @@ class CustomerCreateSchema(BaseModel):
         
         return self
 
+
 class CustomerUpdateSchema(CustomerCreateSchema):
     """更新模型"""
     ...
 
 
-class CustomerOutSchema(CustomerCreateSchema, BaseSchema):
+class CustomerOutSchema(CustomerCreateSchema, BaseSchema, UserBySchema, TenantSchema, CustomerSchema):
     """响应模型"""
     model_config = ConfigDict(from_attributes=True)
+
+
+class CustomerQueryParam:
+    """客户查询参数"""
+
+    def __init__(
+        self,
+        name: Optional[str] = Query(None, description="客户名称"),
+        status: Optional[bool] = Query(None, description="状态用(True:启用 False:禁用)"),
+        created_id: Optional[int] = Query(None, description="创建人"),
+        start_time: Optional[DateTimeStr] = Query(None, description="开始时间", example="2025-01-01 00:00:00"),
+        end_time: Optional[DateTimeStr] = Query(None, description="结束时间", example="2025-12-31 23:59:59"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.name = ("like", name)
+
+        # 精确查询字段
+        self.created_id = created_id
+        self.status = status
+
+        # 时间范围查询
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))

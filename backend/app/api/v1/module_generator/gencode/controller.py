@@ -11,10 +11,9 @@ from app.core.base_params import PaginationQueryParam
 from app.common.request import PaginationService
 from app.utils.common_util import bytes2file_response
 from app.core.logger import log
-
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .param import GenTableQueryParam
-from .schema import GenTableSchema
+
+from .schema import GenTableSchema, GenTableQueryParam
 from .service import GenTableService
 
 

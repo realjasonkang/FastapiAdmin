@@ -13,12 +13,12 @@ from app.utils.common_util import (
 )
 
 from ..auth.schema import AuthSchema
-from .param import MenuQueryParam
 from .crud import MenuCRUD
 from .schema import (
     MenuCreateSchema,
     MenuUpdateSchema,
-    MenuOutSchema
+    MenuOutSchema,
+    MenuQueryParam
 )
 
 
@@ -40,13 +40,14 @@ class MenuService:
         - Dict: 菜单详情对象。
         """
         menu = await MenuCRUD(auth).get_by_id_crud(id=id)
+        # 创建实例后再设置parent_name属性
+        menu_out = MenuOutSchema.model_validate(menu)
         if menu and menu.parent_id:
             parent = await MenuCRUD(auth).get_by_id_crud(id=menu.parent_id)
             if parent:
-                MenuOutSchema.parent_name = parent.name
+                menu_out.parent_name = parent.name
         
-        menu_dict = MenuOutSchema.model_validate(menu).model_dump()
-        return menu_dict
+        return menu_out.model_dump()
 
     @classmethod
     async def get_menu_tree_service(cls, auth: AuthSchema, search: Optional[MenuQueryParam] = None, order_by: Optional[List[Dict]] = None) -> List[Dict]:

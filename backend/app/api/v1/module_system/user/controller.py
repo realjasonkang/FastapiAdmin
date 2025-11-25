@@ -16,7 +16,6 @@ from app.core.logger import log
 
 from ..auth.schema import AuthSchema
 from .service import UserService
-from .param import UserQueryParam
 from .schema import (
     CurrentUserUpdateSchema,
     ResetPasswordSchema,
@@ -24,7 +23,8 @@ from .schema import (
     UserForgetPasswordSchema,
     UserRegisterSchema,
     UserUpdateSchema,
-    UserChangePasswordSchema
+    UserChangePasswordSchema,
+    UserQueryParam
 )
 
 

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from typing import List, Optional
+from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
-from app.core.base_schema import BaseSchema
-from app.core.validator import role_permission_request_validator
 from app.core.validator import DateTimeStr
+from app.core.base_schema import BaseSchema, UserBySchema, TenantSchema
+from app.core.validator import role_permission_request_validator
 
 from ..dept.schema import DeptOutSchema
 from ..menu.schema import MenuOutSchema
@@ -50,7 +51,7 @@ class RoleUpdateSchema(RoleCreateSchema):
     ...
 
 
-class RoleOutSchema(RoleCreateSchema, BaseSchema):
+class RoleOutSchema(RoleCreateSchema, BaseSchema, UserBySchema, TenantSchema):
     """角色信息响应模型"""
     model_config = ConfigDict(from_attributes=True)
     
@@ -58,11 +59,25 @@ class RoleOutSchema(RoleCreateSchema, BaseSchema):
     depts: List[DeptOutSchema] = Field(default_factory=list, description='角色部门列表')
 
 
-class RoleOptionsOut(RoleCreateSchema):
-    model_config = ConfigDict(from_attributes=True)
+class RoleQueryParam:
+    """角色管理查询参数"""
 
-    id: int = Field(..., description="主键ID")
-    created_time: DateTimeStr = Field(..., description="创建时间")
-    updated_time: DateTimeStr = Field(..., description="更新时间")
-    menus: List[MenuOutSchema] = Field(default_factory=list, description='角色菜单列表')
-    depts: List[DeptOutSchema] = Field(default_factory=list, description='角色部门列表')
+    def __init__(
+        self,
+        name: Optional[str] = Query(None, description="角色名称"),
+        status: Optional[bool] = Query(None, description="是否可用"),
+        created_id: Optional[int] = Query(None, description="创建人"),
+        start_time: Optional[DateTimeStr] = Query(None, description="开始时间", example="2025-01-01 00:00:00"),
+        end_time: Optional[DateTimeStr] = Query(None, description="结束时间", example="2025-12-31 23:59:59"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.name = ("like", name)
+
+        # 精确查询字段
+        self.created_id = created_id
+        self.status = status
+        
+        # 时间范围查询
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))

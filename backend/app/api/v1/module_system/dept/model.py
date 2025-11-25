@@ -19,18 +19,6 @@ class DeptModel(ModelMixin, TenantMixin):
     - 部门属于租户(tenant_id必填)
     - 部门不属于客户(customer_id不需要)
     - 支持无限层级嵌套的树形结构
-    - tree_path字段用于高效实现"本部门及以下"数据权限
-    
-    数据权限实现:
-    - 本部门: WHERE user.dept_id = current_user.dept_id
-    - 本部门及以下: WHERE dept.tree_path LIKE 'current_dept.tree_path%'
-    - 自定义: WHERE dept_id IN (role关联的部门ID列表)
-    
-    tree_path格式:
-    - 格式: /1/3/5/ 表示从根部门到当前部门的完整路径
-    - 根部门: /1/
-    - 二级部门: /1/3/
-    - 三级部门: /1/3/5/
     """
     __tablename__: str = "system_dept"
     __table_args__: dict[str, str] = ({'comment': '部门表'})

@@ -13,7 +13,6 @@ from app.core.logger import log
 from app.utils.excel_util import ExcelUtil
 from app.config.setting import settings
 
-from .param import ResourceSearchQueryParam
 from .schema import (
     ResourceItemSchema,
     ResourceDirectorySchema,
@@ -21,7 +20,8 @@ from .schema import (
     ResourceMoveSchema,
     ResourceCopySchema,
     ResourceRenameSchema,
-    ResourceCreateDirSchema
+    ResourceCreateDirSchema,
+    ResourceSearchQueryParam
 )
 
 

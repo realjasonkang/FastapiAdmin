@@ -15,8 +15,7 @@ from app.core.exceptions import CustomException
 from app.api.v1.module_system.auth.schema import AuthSchema
 from .tools.jinja2_template_util import Jinja2TemplateUtil
 from .tools.gen_util import GenUtils
-from .schema import GenTableSchema, GenTableOutSchema, GenTableColumnSchema,  GenTableColumnOutSchema
-from .param import GenTableQueryParam
+from .schema import GenTableSchema, GenTableOutSchema, GenTableColumnSchema,  GenTableColumnOutSchema, GenTableQueryParam
 from .crud import GenTableColumnCRUD, GenTableCRUD
 
 

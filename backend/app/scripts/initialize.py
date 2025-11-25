@@ -70,6 +70,9 @@ class InitializeData:
         参数:
         - db (AsyncSession): 异步数据库会话。
         """
+        # 存储字典类型数据的映射，用于后续字典数据的初始化
+        dict_type_mapping = {}
+        
         for model in self.prepare_init_models:
             table_name = model.__tablename__
             
@@ -91,9 +94,29 @@ class InitializeData:
                     # 获取对应的模型类
                     model_class = DeptModel if table_name == "system_dept" else MenuModel
                     objs = self.__create_objects_with_children(data, model_class)
+                # 处理字典类型表，保存类型映射
+                elif table_name == "system_dict_type":
+                    objs = []
+                    for item in data:
+                        obj = model(**item)
+                        objs.append(obj)
+                        dict_type_mapping[item['dict_type']] = obj
+                # 处理字典数据表，添加dict_type_id关联
+                elif table_name == "system_dict_data":
+                    objs = []
+                    for item in data:
+                        dict_type = item.get('dict_type')
+                        if dict_type in dict_type_mapping:
+                            # 添加dict_type_id关联
+                            item['dict_type_id'] = dict_type_mapping[dict_type].id
+                        else:
+                            log.warning(f"⚠️  未找到字典类型 {dict_type}，跳过该字典数据")
+                            continue
+                        objs.append(model(**item))
                 else:
                     # 表为空，直接插入全部数据
                     objs = [model(**item) for item in data]
+                
                 db.add_all(objs)
                 await db.flush()
                 log.info(f"✅️ 已向 {table_name} 表写入初始化数据")

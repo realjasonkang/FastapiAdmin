@@ -11,8 +11,7 @@ from app.utils.excel_util import ExcelUtil
 from app.core.logger import log
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .schema import DemoCreateSchema, DemoUpdateSchema, DemoOutSchema
-from .param import DemoQueryParam
+from .schema import DemoCreateSchema, DemoUpdateSchema, DemoOutSchema, DemoQueryParam
 from .crud import DemoCRUD
 
 

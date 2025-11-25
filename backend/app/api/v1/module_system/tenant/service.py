@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 
 import io
+import random
+import string
+import time
 from typing import Any, List, Dict, Optional
 from fastapi import UploadFile
 import pandas as pd
 
+from sqlalchemy import func
 from app.core.base_schema import BatchSetAvailable
 from app.core.exceptions import CustomException
 from app.utils.excel_util import ExcelUtil
 from app.core.logger import log
+from app.utils.hash_bcrpy_util import PwdUtil
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from .schema import TenantCreateSchema, TenantUpdateSchema, TenantOutSchema
-from .param import TenantQueryParam
+from app.api.v1.module_system.user.crud import UserCRUD
+from .schema import TenantCreateSchema, TenantUpdateSchema, TenantOutSchema, TenantQueryParam
 from .crud import TenantCRUD
 
 
@@ -20,6 +25,105 @@ class TenantService:
     """
     租户管理模块服务层
     """
+    
+    @classmethod
+    async def _check_quota_limit(cls, auth: AuthSchema, tenant_id: int, resource_type: str, increment: int = 1) -> bool:
+        """
+        检查租户资源配额限制 - 只检查用户配额
+        
+        参数:
+        - auth (AuthSchema): 认证信息
+        - tenant_id (int): 租户ID
+        - resource_type (str): 资源类型，当前仅支持 'user'
+        - increment (int): 要增加的资源数量，默认为1
+        
+        返回:
+        - bool: 是否允许创建
+        
+        异常:
+        - CustomException: 当配额不足时抛出
+        """
+        # 系统租户不受配额限制
+        if tenant_id == 1:
+            return True
+        
+        # 只处理用户类型的配额检查
+        if resource_type != 'user':
+            return True
+        
+        # 获取租户信息
+        tenant = await TenantCRUD(auth).get_by_id_crud(id=tenant_id)
+        if not tenant:
+            raise CustomException(msg="租户不存在")
+        
+        # 如果未启用配额限制，直接返回允许
+        if not tenant.enable_quota_limit:
+            return True
+        
+        # 计算当前用户数量
+        from sqlalchemy.ext.asyncio import AsyncSession
+        from sqlalchemy import select
+        from app.api.v1.module_system.user.model import UserModel
+        
+        session: AsyncSession = AsyncSession.get(auth.db)
+        stmt = select(func.count(UserModel.id)).where(
+            UserModel.tenant_id == tenant_id,
+            UserModel.is_deleted == False
+        )
+        result = await session.execute(stmt)
+        current_count = result.scalar() or 0
+        max_limit = tenant.max_user_count
+        
+        # 检查配额是否足够
+        if current_count + increment > max_limit:
+            raise CustomException(
+                msg=f"租户配额不足！当前用户数量: {current_count}, 最大限制: {max_limit}"
+            )
+        
+        return True
+    
+    @classmethod
+    async def get_tenant_quota_info(cls, auth: AuthSchema, tenant_id: int) -> Dict:
+        """
+        获取租户配额信息和使用统计 - 只返回用户配额信息
+        
+        参数:
+        - auth (AuthSchema): 认证信息
+        - tenant_id (int): 租户ID
+        
+        返回:
+        - Dict: 租户配额信息字典
+        """
+        from sqlalchemy.ext.asyncio import AsyncSession
+        from sqlalchemy import select, func
+        from app.api.v1.module_system.user.model import UserModel
+        
+        tenant = await TenantCRUD(auth).get_by_id_crud(id=tenant_id)
+        if not tenant:
+            raise CustomException(msg="租户不存在")
+        
+        session: AsyncSession = AsyncSession.get(auth.db)
+        
+        # 获取用户数量统计
+        user_stmt = select(func.count(UserModel.id)).where(
+            UserModel.tenant_id == tenant_id,
+            UserModel.is_deleted == False
+        )
+        user_result = await session.execute(user_stmt)
+        current_user_count = user_result.scalar() or 0
+        
+        return {
+            "tenant_id": tenant.id,
+            "tenant_name": tenant.name,
+            "enable_quota_limit": tenant.enable_quota_limit,
+            "quotas": {
+                "user": {
+                    "current": current_user_count,
+                    "max": tenant.max_user_count,
+                    "usage_rate": round(current_user_count / tenant.max_user_count * 100, 2) if tenant.max_user_count > 0 else 0
+                }
+            }
+        }
     
     @classmethod
     async def detail_service(cls, auth: AuthSchema, id: int) -> Dict:
@@ -36,7 +140,17 @@ class TenantService:
         obj = await TenantCRUD(auth).get_by_id_crud(id=id)
         if not obj:
             raise CustomException(msg="该数据不存在")
-        return TenantOutSchema.model_validate(obj).model_dump()
+        
+        # 获取租户详情基础数据
+        result = TenantOutSchema.model_validate(obj).model_dump()
+        
+        # 获取租户配额使用统计 - 只更新用户数量
+        quota_info = await cls.get_tenant_quota_info(auth, id)
+        result.update({
+            "current_user_count": quota_info['quotas']['user']['current']
+        })
+        
+        return result
     
     @classmethod
     async def list_service(cls, auth: AuthSchema, search: Optional[TenantQueryParam] = None, order_by: Optional[List[Dict[str, str]]] = None) -> List[Dict]:
@@ -100,8 +214,70 @@ class TenantService:
         obj = await TenantCRUD(auth).get(code=data.code)
         if obj:
             raise CustomException(msg='创建失败，编码已存在')
-        obj = await TenantCRUD(auth).create_crud(data=data)
-        return TenantOutSchema.model_validate(obj).model_dump()
+        
+        # 设置默认配额值（如果未提供） - 只设置用户相关配额
+        create_data = data.model_dump()
+        default_quotas = {
+            'max_user_count': 100,
+            'enable_quota_limit': True
+        }
+        for field, default_value in default_quotas.items():
+            if field not in create_data:
+                create_data[field] = default_value
+        
+        # 创建租户
+        tenant_obj = await TenantCRUD(auth).create_crud(data=create_data)
+        
+        # 自动创建租户初始管理员用户
+        await cls._create_tenant_admin_user(auth, tenant_obj)
+        
+        return TenantOutSchema.model_validate(tenant_obj).model_dump()
+    
+    @classmethod
+    async def _create_tenant_admin_user(cls, auth: AuthSchema, tenant_obj) -> None:
+        """
+        为新创建的租户自动创建初始管理员用户
+        
+        参数:
+        - auth (AuthSchema): 认证信息模型
+        - tenant_obj: 租户对象
+        
+        返回:
+        - None
+        """
+        try:
+            # 生成初始管理员用户名（使用租户编码）
+            username = f"{tenant_obj.code}_admin"
+            
+            # 生成随机密码
+            password_length = 12
+            characters = string.ascii_letters + string.digits + "!@#$%^&*"
+            password = ''.join(random.choice(characters) for _ in range(password_length))
+            
+            # 创建管理员用户数据
+            admin_user_data = {
+                "username": username,
+                "password": PwdUtil.set_password_hash(password=password),
+                "name": f"{tenant_obj.name}管理员",
+                "tenant_id": tenant_obj.id,
+                "user_type": "1",  # 租户管理员类型
+                "status": True,
+                "created_id": auth.user.id if auth.user else None
+            }
+            
+            # 检查用户配额
+            await cls._check_quota_limit(auth, tenant_obj.id, 'user', 1)
+            
+            # 创建用户
+            new_user = await UserCRUD(auth).create_crud(data=admin_user_data)
+            
+            # 记录日志，包含临时密码信息（仅开发环境记录，生产环境应避免）
+            log.info(f"为租户[{tenant_obj.name}]创建初始管理员用户成功，用户名: {username}，临时密码: {password}")
+            
+        except Exception as e:
+            log.error(f"为租户[{tenant_obj.name}]创建初始管理员用户失败: {str(e)}")
+            # 不中断租户创建流程，仅记录错误
+            pass
     
     @classmethod
     async def update_service(cls, auth: AuthSchema, id: int, data: TenantUpdateSchema) -> Dict:
@@ -116,6 +292,21 @@ class TenantService:
         返回:
         - Dict: 租户模型实例字典
         """
+        # 系统租户特殊处理
+        if id == 1:
+            # 系统租户只允许修改配额相关设置，不允许修改核心信息
+            update_data = data.model_dump(exclude_unset=True)
+            allowed_fields = ['max_user_count', 'enable_quota_limit', 'start_time', 'end_time', 'description']
+            # 过滤出允许修改的字段
+            update_data = {k: v for k, v in update_data.items() if k in allowed_fields}
+            
+            if update_data:
+                obj = await TenantCRUD(auth).update_crud(id=id, data=update_data)
+                log.info(f"系统租户配额设置已更新")
+            else:
+                obj = await TenantCRUD(auth).get_by_id_crud(id=id)
+            return TenantOutSchema.model_validate(obj).model_dump()
+            
         # 检查数据是否存在
         obj = await TenantCRUD(auth).get_by_id_crud(id=id)
         if not obj:
@@ -144,6 +335,10 @@ class TenantService:
         if len(ids) < 1:
             raise CustomException(msg='删除失败，删除对象不能为空')
         
+        # 系统租户保护：不允许删除系统租户(id=1)
+        if 1 in ids:
+            raise CustomException(msg='系统租户不允许删除')
+        
         # 检查所有要删除的数据是否存在
         for id in ids:
             obj = await TenantCRUD(auth).get_by_id_crud(id=id)
@@ -164,6 +359,10 @@ class TenantService:
         返回:
         - None
         """
+        # 系统租户保护：不允许禁用系统租户(id=1)
+        if data.status is False and 1 in data.ids:
+            raise CustomException(msg='系统租户不允许禁用')
+        
         await TenantCRUD(auth).set_available_crud(ids=data.ids, status=data.status)
     
     @classmethod
@@ -180,8 +379,11 @@ class TenantService:
         mapping_dict = {
             'id': '编号',
             'name': '名称', 
+            'code': '编码',
             'status': '状态',
             'description': '备注',
+            'start_time': '开始时间',
+            'end_time': '结束时间',
             'created_time': '创建时间',
             'updated_time': '更新时间',
             'created_id': '创建者',
@@ -190,14 +392,25 @@ class TenantService:
         # 复制数据并转换状态
         data = obj_list.copy()
         for item in data:
+            # 系统租户特殊标记
+            if item.get('id') == 1:
+                item['name'] = f"{item.get('name')} [系统租户]"
+            
             # 处理状态
             item['status'] = '正常' if item.get('status') else '停用'
+            
             # 处理创建者
             creator_info = item.get('created_id')
             if isinstance(creator_info, dict):
                 item['created_id'] = creator_info.get('name', '未知')
             else:
                 item['created_id'] = '未知'
+        
+        # 限制导出数量，防止大数据量导出
+        max_export_count = 1000
+        if len(data) > max_export_count:
+            data = data[:max_export_count]
+            log.warning(f'导出数据超过{max_export_count}条限制，仅导出前{max_export_count}条')
 
         return ExcelUtil.export_list2excel(list_data=data, mapping_dict=mapping_dict)
 
@@ -217,8 +430,11 @@ class TenantService:
         
         header_dict = {
             '名称': 'name',
+            '编码': 'code',
             '状态': 'status',
-            '描述': 'description'
+            '描述': 'description',
+            '开始时间': 'start_time',
+            '结束时间': 'end_time'
         }
 
         try:
@@ -226,6 +442,11 @@ class TenantService:
             contents = await file.read()
             df = pd.read_excel(io.BytesIO(contents))
             await file.close()
+            
+            # 验证导入数量限制
+            max_import_count = 100
+            if len(df) > max_import_count:
+                raise CustomException(msg=f"单次导入不能超过{max_import_count}条数据")
             
             if df.empty:
                 raise CustomException(msg="导入文件为空")
@@ -239,14 +460,19 @@ class TenantService:
             df.rename(columns=header_dict, inplace=True)
             
             # 验证必填字段
-            required_fields = ['name', 'status']
+            required_fields = ['name', 'code', 'status']
             for field in required_fields:
                 missing_rows = df[df[field].isnull()].index.tolist()
-                raise CustomException(msg=f"{[k for k,v in header_dict.items() if v == field][0]}不能为空，第{[i+1 for i in missing_rows]}行")
+                if missing_rows:
+                    field_name = [k for k,v in header_dict.items() if v == field][0]
+                    error_rows = [i+1 for i in missing_rows]
+                    raise CustomException(msg=f"{field_name}不能为空，第{error_rows}行")
             
             error_msgs = []
             success_count = 0
             count = 0
+            processed_names = set()  # 用于检测重复名称
+            processed_codes = set()  # 用于检测重复编码
             
             # 处理每一行数据
             for index, row in df.iterrows():
@@ -254,29 +480,83 @@ class TenantService:
                 try:
                     # 数据转换前的类型检查
                     try:
-                        status = True if row['status'] == '正常' else False
+                        status = True if str(row['status']).strip() == '正常' else False
                     except ValueError:
                         error_msgs.append(f"第{count}行: 状态必须是'正常'或'停用'")
                         continue
                     
-                    # 构建用户数据
+                    # 字段格式验证
+                    name = str(row['name']).strip()
+                    if len(name) < 2 or len(name) > 64:
+                        error_msgs.append(f"第{count}行: 租户名称长度必须在2-64个字符之间")
+                        continue
+                    
+                    # 检查名称是否只包含允许的字符
+                    if not all(c.isalnum() or c in '-_' for c in name.replace(' ', '')):
+                        error_msgs.append(f"第{count}行: 租户名称只能包含字母、数字、下划线、中划线和空格")
+                        continue
+                    
+                    # 检查导入文件内的重复名称
+                    if name in processed_names:
+                        error_msgs.append(f"第{count}行: 租户名称 '{name}' 在文件中重复")
+                        continue
+                    processed_names.add(name)
+                    
+                    # 处理编码
+                    code = str(row['code']).strip() if pd.notna(row['code']) else f"T{int(time.time())}{random.randint(100, 999)}"
+                    if code in processed_codes:
+                        error_msgs.append(f"第{count}行: 租户编码 '{code}' 在文件中重复")
+                        continue
+                    processed_codes.add(code)
+                    
+                    # 构建租户数据
                     data = {
-                        "name": str(row['name']),
+                        "name": name,
+                        "code": code,
                         "status": status,
-                        "description": str(row['description']),
+                        "description": str(row['description']).strip() if pd.notna(row['description']) else "",
                     }
-
-                    # 处理用户导入
+                    
+                    # 处理时间字段
+                    if pd.notna(row.get('start_time')):
+                        data['start_time'] = row['start_time']
+                    if pd.notna(row.get('end_time')):
+                        data['end_time'] = row['end_time']
+                    
+                    # 检查时间有效性
+                    if 'start_time' in data and 'end_time' in data and data['start_time'] > data['end_time']:
+                        error_msgs.append(f"第{count}行: 开始时间不能晚于结束时间")
+                        continue
+                    
+                    # 处理租户导入
                     exists_obj = await TenantCRUD(auth).get(name=data["name"])
                     if exists_obj:
+                        # 系统租户保护
+                        if exists_obj.id == 1:
+                            error_msgs.append(f"第{count}行: 系统租户不允许修改")
+                            continue
+                            
                         if update_support:
                             await TenantCRUD(auth).update(id=exists_obj.id, data=data)
                             success_count += 1
                         else:
-                            error_msgs.append(f"第{count}行: 对象 {data['name']} 已存在")
+                            error_msgs.append(f"第{count}行: 租户 {data['name']} 已存在")
                     else:
-                        await TenantCRUD(auth).create(data=data)
+                        # 检查编码是否已存在
+                        exists_code = await TenantCRUD(auth).get(code=data["code"])
+                        if exists_code:
+                            error_msgs.append(f"第{count}行: 租户编码 '{data['code']}' 已存在")
+                            continue
+                            
+                        # 创建租户
+                        new_tenant = await TenantCRUD(auth).create(data=data)
                         success_count += 1
+                        
+                        # 自动创建租户管理员（如果导入数量不是特别大）
+                        if success_count < 10:  # 限制自动创建管理员的数量
+                            await cls._create_tenant_admin_user(auth, new_tenant)
+                        else:
+                            log.info(f"批量导入超过10个租户，跳过自动创建管理员用户")
                         
                 except Exception as e:
                     error_msgs.append(f"第{count}行: {str(e)}")
@@ -286,10 +566,16 @@ class TenantService:
             result = f"成功导入 {success_count} 条数据"
             if error_msgs:
                 result += "\n错误信息:\n" + "\n".join(error_msgs)
+                # 记录错误详情到日志
+                log.error(f"租户批量导入错误详情: {error_msgs}")
+            
+            log.info(f"租户批量导入完成: 成功{success_count}条, 失败{len(error_msgs)}条")
             return result
             
+        except CustomException:
+            raise
         except Exception as e:
-            log.error(f"批量导入用户失败: {str(e)}")
+            log.error(f"批量导入租户失败: {str(e)}")
             raise CustomException(msg=f"导入失败: {str(e)}")
 
     @classmethod
@@ -300,11 +586,29 @@ class TenantService:
         返回:
         - bytes: Excel文件字节流
         """
-        header_list = ['名称', '状态', '描述']
+        header_list = ['名称', '编码', '状态', '描述', '开始时间', '结束时间']
         selector_header_list = ['状态'] 
         option_list = [{'状态': ['正常', '停用']}]
+        
+        # 添加示例数据和说明
+        sample_data = [
+            ['测试租户1', 'TEST001', '正常', '这是一个测试租户', '', ''],
+            ['测试租户2', 'TEST002', '正常', '这是另一个测试租户', '', '']
+        ]
+        
+        # 添加说明文本
+        description = """导入说明：
+1. 名称和编码为必填项，名称长度2-64个字符
+2. 编码如果不填写，系统会自动生成
+3. 状态只能选择'正常'或'停用'
+4. 时间格式：YYYY-MM-DD HH:MM:SS或YYYY-MM-DD
+5. 单次导入最多支持100条数据
+"""
+        
         return ExcelUtil.get_excel_template(
             header_list=header_list,
             selector_header_list=selector_header_list,
-            option_list=option_list
+            option_list=option_list,
+            sample_data=sample_data,
+            description=description
         )

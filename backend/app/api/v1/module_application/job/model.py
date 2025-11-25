@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
-from sqlalchemy import Boolean, String, Integer, Text, ForeignKey, DateTime
+from sqlalchemy import Boolean, String, Integer, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base_model import MappedBase, ModelMixin, UserMixin, TenantMixin, CustomerMixin
+from app.core.base_model import ModelMixin, UserMixin, TenantMixin, CustomerMixin
 
 
 class JobModel(ModelMixin, UserMixin, TenantMixin, CustomerMixin):
@@ -45,20 +44,17 @@ class JobModel(ModelMixin, UserMixin, TenantMixin, CustomerMixin):
     )
 
 
-class JobLogModel(MappedBase):
+class JobLogModel(ModelMixin, TenantMixin):
     """
     定时任务调度日志表
     
-    日志表不需要租户隔离,因为通过job关联已经隐式隔离
-    但为了查询性能,可以考虑冗余tenant_id
+    添加tenant_id字段以支持多租户隔离，提高查询性能
+    即使job记录被删除，日志仍然保留租户标识信息
     """
     __tablename__: str = 'app_job_log'
     __table_args__: dict[str, str] = ({'comment': '定时任务调度日志表'})
     __loader_options__: list[str] = ["job"]
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, comment='主键ID')
-    status: Mapped[str] = mapped_column(String(10), default='0', nullable=False, comment="执行状态(0:成功 1:失败)")
-    description: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, comment="备注/描述")
     job_name: Mapped[str] = mapped_column(String(64), nullable=False, comment='任务名称')
     job_group: Mapped[str] = mapped_column(String(64), nullable=False, comment='任务组名')
     job_executor: Mapped[str] = mapped_column(String(64), nullable=False, comment='任务执行器')
@@ -68,7 +64,6 @@ class JobLogModel(MappedBase):
     job_trigger: Mapped[str | None] = mapped_column(String(255), nullable=True, default='', comment='任务触发器')
     job_message: Mapped[str | None] = mapped_column(String(500), nullable=True, default='', comment='日志信息')
     exception_info: Mapped[str | None] = mapped_column(String(2000), nullable=True, default='', comment='异常信息')
-    create_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=datetime.now, comment='创建时间')
     
     # 任务关联
     job_id: Mapped[int | None] = mapped_column(
@@ -77,6 +72,18 @@ class JobLogModel(MappedBase):
         index=True,
         comment='任务ID'
     )
+    
+    # 索引优化 - 为租户ID创建索引
+    __table_args__ = ({
+        'comment': '定时任务调度日志表',
+    })
+    
+    # 为多租户查询性能优化添加复合索引
+    # 注意：实际索引会在数据库迁移时创建
+    __indexes__ = [
+        'tenant_id_idx',  # 租户ID索引
+        'job_id_tenant_id_idx'  # 任务ID和租户ID的复合索引
+    ]
     job: Mapped["JobModel | None"] = relationship(
         back_populates="job_logs", 
         lazy="selectin"

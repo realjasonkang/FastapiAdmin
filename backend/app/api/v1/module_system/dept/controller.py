@@ -10,11 +10,11 @@ from app.core.base_schema import BatchSetAvailable
 from app.core.logger import log
 
 from ..auth.schema import AuthSchema
-from .param import DeptQueryParam
 from .service import DeptService
 from .schema import (
     DeptCreateSchema,
-    DeptUpdateSchema
+    DeptUpdateSchema,
+    DeptQueryParam
 )
 
 

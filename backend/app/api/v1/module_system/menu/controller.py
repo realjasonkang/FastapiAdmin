@@ -10,11 +10,11 @@ from app.core.router_class import OperationLogRoute
 from app.core.logger import log
 
 from ..auth.schema import AuthSchema
-from .param import MenuQueryParam
 from .service import MenuService
 from .schema import (
     MenuCreateSchema,
-    MenuUpdateSchema
+    MenuUpdateSchema,
+    MenuQueryParam
 )
 
 MenuRouter = APIRouter(route_class=OperationLogRoute, prefix="/menu", tags=["菜单管理"])

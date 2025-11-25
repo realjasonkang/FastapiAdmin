@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from fastapi import APIRouter, Body, Depends, Path, Query
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.common.request import PaginationService
@@ -12,7 +12,7 @@ from app.core.base_params import PaginationQueryParam
 from app.core.logger import log
 
 from ..auth.schema import AuthSchema
-from .param import OperationLogQueryParam
+from .schema import OperationLogQueryParam
 from .service import OperationLogService
 
 

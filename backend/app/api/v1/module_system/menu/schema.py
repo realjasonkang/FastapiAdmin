@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from typing import Optional
+from typing import Optional, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from fastapi import Query
 
+from app.core.validator import DateTimeStr
 from app.core.validator import menu_request_validator
 from app.core.base_schema import BaseSchema
 
@@ -11,21 +13,21 @@ class MenuCreateSchema(BaseModel):
     """菜单创建模型"""
     name: str = Field(..., max_length=50, description="菜单名称")
     type: int = Field(..., ge=1, le=4, description="菜单类型(1:目录 2:菜单 3:按钮 4:外链)")
-    icon: Optional[str] = Field(default=None, max_length=100, description="菜单图标")
     order: int = Field(..., ge=1, description="显示顺序")
     permission: Optional[str] = Field(default=None, max_length=100, description="权限标识")
+    icon: Optional[str] = Field(default=None, max_length=100, description="菜单图标")
     route_name: Optional[str] = Field(default=None, max_length=100, description="路由名称")
     route_path: Optional[str] = Field(default=None, max_length=200, description="路由地址")
     component_path: Optional[str] = Field(default=None, max_length=255, description="组件路径")
     redirect: Optional[str] = Field(default=None, max_length=200, description="重定向地址")
-    status: bool = Field(default=True, description="是否启用(True:启用 False:禁用)")
-    keep_alive: bool = Field(default=True, description="是否缓存(True:是 False:否)")
     hidden: bool = Field(default=False, description="是否隐藏(True:是 False:否)")
+    keep_alive: bool = Field(default=True, description="是否缓存(True:是 False:否)")
     always_show: bool = Field(default=False, description="是否始终显示(True:是 False:否)")
     title: Optional[str] = Field(default=None, max_length=50, description="菜单标题")
     params: Optional[list[dict[str, str]]] = Field(default=None, description="路由参数，格式为[{key: string, value: string}]")
     affix: bool = Field(default=False, description="是否固定标签页(True:是 False:否)")
     parent_id: Optional[int] = Field(default=None, ge=1, description="父菜单ID")
+    status: bool = Field(default=True, description="是否启用(True:启用 False:禁用)")
     description: Optional[str] = Field(default=None, max_length=255, description="描述")
 
     @model_validator(mode='before')
@@ -73,3 +75,33 @@ class MenuOutSchema(MenuCreateSchema, BaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
     parent_name: Optional[str] = Field(default=None, max_length=50, description="父菜单名称")
+
+
+class MenuQueryParam:
+    """菜单管理查询参数"""
+
+    def __init__(
+        self,
+        name: Optional[str] = Query(None, description="菜单名称"),
+        route_path: Optional[str] = Query(None, description="路由地址"),
+        component_path: Optional[str] = Query(None, description="组件路径"),
+        type: Optional[Literal['M', 'C', 'F']] = Query(None, description="菜单类型(M目录 C菜单 F按钮)"),
+        permission: Optional[str] = Query(None, description="权限标识"),
+        status: Optional[bool] = Query(None, description="菜单状态(True正常 False停用)"),
+        start_time: Optional[DateTimeStr] = Query(None, description="开始时间", example="2025-01-01 00:00:00"),
+        end_time: Optional[DateTimeStr] = Query(None, description="结束时间", example="2025-12-31 23:59:59"),
+    ) -> None:
+        
+        # 模糊查询字段
+        self.name = ("like", name)
+        self.route_path = ("like", route_path)
+        self.component_path = ("like", component_path)
+        self.permission = ("like", permission)
+
+        # 精确查询字段
+        self.type = type
+        self.status = status
+
+        # 时间范围查询
+        if start_time and end_time:
+            self.created_time = ("between", (start_time, end_time))
