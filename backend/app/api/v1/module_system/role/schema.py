@@ -4,7 +4,7 @@ from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 
 from app.core.validator import DateTimeStr
-from app.core.base_schema import BaseSchema, UserBySchema
+from app.core.base_schema import BaseSchema
 from app.core.validator import role_permission_request_validator
 
 from ..dept.schema import DeptOutSchema
@@ -50,7 +50,7 @@ class RoleUpdateSchema(RoleCreateSchema):
     ...
 
 
-class RoleOutSchema(RoleCreateSchema, BaseSchema, UserBySchema):
+class RoleOutSchema(RoleCreateSchema, BaseSchema):
     """角色信息响应模型"""
     model_config = ConfigDict(from_attributes=True)
     
@@ -67,16 +67,12 @@ class RoleQueryParam:
         status: str | None = Query(None, description="是否可用"),
         created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
         updated_time: list[DateTimeStr] | None = Query(None, description="更新时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
-        created_id: int | None = Query(None, description="创建人"),
-        updated_id: int | None = Query(None, description="更新人"),
     ) -> None:
         
         # 模糊查询字段
         self.name = ("like", name)
 
         # 精确查询字段
-        self.created_id = created_id
-        self.updated_id = updated_id
         self.status = status
         
         # 时间范围查询

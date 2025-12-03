@@ -93,7 +93,7 @@ async def get_current_user(
         username=username, 
         preload=[
             "dept", 
-            selectinload(UserModel.roles).selectinload(RoleModel.created_by),
+            selectinload(UserModel.roles),
             "positions", 
             "created_by"
         ]

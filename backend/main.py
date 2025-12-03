@@ -84,6 +84,9 @@ def run(env: Annotated[EnvironmentEnum, typer.Option("--env", help="运行环境
         display_shutdown_info()
     except Exception as e:
         raise
+    finally:
+        from app.core.logger import cleanup_logging
+        cleanup_logging()
 
 @fastapiadmin_cli.command(name="revision", help="生成新的 Alembic 迁移脚本, 运行 python main.py revision --env=dev")
 def revision(env: Annotated[EnvironmentEnum, typer.Option("--env", help="运行环境 (dev, prod)")] = EnvironmentEnum.DEV) -> None:

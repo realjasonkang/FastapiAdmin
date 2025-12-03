@@ -283,6 +283,16 @@
           </template>
         </el-table-column>
         <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'updated_id')?.show"
+          label="更新人"
+          prop="updated_id"
+          min-width="120"
+        >
+          <template #default="scope">
+            <el-tag>{{ scope.row.updated_by?.name }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
           v-if="tableColumns.find((col) => col.prop === 'operation')?.show"
           fixed="right"
           label="操作"

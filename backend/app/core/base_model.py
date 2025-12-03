@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from typing import Optional
 from datetime import datetime
 from sqlalchemy import DateTime, String, Integer, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, declared_attr, relationship
@@ -93,29 +94,25 @@ class UserMixin(MappedBase):
     )
 
     @declared_attr
-    def created_by(cls) -> Mapped["UserModel"]:
+    def created_by(cls) -> Mapped[Optional["UserModel"]]:
         """
         创建人关联关系（延迟加载，避免循环依赖）
         """
         return relationship(
             "UserModel",
-            primaryjoin=f"{cls.__name__}.created_id == UserModel.id",
             lazy="selectin",
-            foreign_keys=lambda: [cls.created_id],
-            viewonly=True,
+            foreign_keys=lambda: cls.created_id,
             uselist=False
         )
 
     @declared_attr
-    def updated_by(cls) -> Mapped["UserModel"]:
+    def updated_by(cls) -> Mapped[Optional["UserModel"]]:
         """
         更新人关联关系（延迟加载，避免循环依赖）
         """
         return relationship(
             "UserModel",
-            primaryjoin=f"{cls.__name__}.updated_id == UserModel.id",
             lazy="selectin",
-            foreign_keys=lambda: [cls.updated_id],
-            viewonly=True,
+            foreign_keys=lambda: cls.updated_id,
             uselist=False
         )

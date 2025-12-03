@@ -104,3 +104,22 @@ class UserModel(ModelMixin, UserMixin):
         back_populates="users", 
         lazy="selectin"
     )
+    
+    # 覆盖 UserMixin 的关系定义,显式指定 foreign_keys 避免自引用混淆
+    created_by: Mapped["UserModel | None"] = relationship(
+        "UserModel",
+        foreign_keys="UserModel.created_id",
+        remote_side="UserModel.id",
+        lazy="selectin",
+        uselist=False,
+        viewonly=True  # 防止级联操作
+    )
+    
+    updated_by: Mapped["UserModel | None"] = relationship(
+        "UserModel",
+        foreign_keys="UserModel.updated_id",
+        remote_side="UserModel.id",
+        lazy="selectin",
+        uselist=False,
+        viewonly=True  # 防止级联操作
+    )

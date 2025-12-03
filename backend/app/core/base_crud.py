@@ -5,7 +5,7 @@ from typing import TypeVar, Sequence, Generic, Dict, Any, List, Optional, Type, 
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.orm import selectinload
 from sqlalchemy.engine import Result
-from sqlalchemy import asc, func, select, delete, Select, desc, update, or_, and_
+from sqlalchemy import asc, func, select, delete, Select, desc, update
 from sqlalchemy import inspect as sa_inspect
 
 from app.core.base_model import MappedBase
@@ -160,8 +160,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 sql = sql.options(opt)
             sql = await self.__filter_permissions(sql)
 
-            # 获取总数
-            count_sql = select(func.count()).select_from(self.model)
+            # 优化count查询：使用主键计数而非全表扫描
+            mapper = sa_inspect(self.model)
+            pk_cols = list(getattr(mapper, "primary_key", []))
+            if pk_cols:
+                # 使用主键的第一列进行计数（主键必定非NULL，性能更好）
+                count_sql = select(func.count(pk_cols[0])).select_from(self.model)
+            else:
+                # 降级方案：使用count(*)
+                count_sql = select(func.count()).select_from(self.model)
+            
             if conditions:
                 count_sql = count_sql.where(*conditions)
             count_sql = await self.__filter_permissions(count_sql)
@@ -244,6 +252,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                     
             await self.auth.db.flush()
             await self.auth.db.refresh(obj)
+            
+            # 权限二次确认：flush后再次验证对象仍在权限范围内
+            # 防止并发修改导致的权限逃逸（如其他事务修改了created_id）
+            verify_obj = await self.get(id=id)
+            if not verify_obj:
+                # 对象已被删除或权限已失效
+                raise CustomException(msg="更新失败，对象不存在或无权限访问")
+            
             return obj
         except Exception as e:
             raise CustomException(msg=f"更新失败: {str(e)}")
@@ -259,13 +275,27 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         - CustomException: 删除失败时抛出异常
         """
         try:
+            # 先查询确认权限,避免删除无权限的数据
+            objs = await self.list(search={"id": ("in", ids)})
+            accessible_ids = [obj.id for obj in objs]
+            
+            # 检查是否所有ID都有权限访问
+            inaccessible_count = len(ids) - len(accessible_ids)
+            if inaccessible_count > 0:
+                raise CustomException(msg=f"无权限删除{inaccessible_count}条数据")
+            
+            if not accessible_ids:
+                return  # 没有可删除的数据
+            
             mapper = sa_inspect(self.model)
             pk_cols = list(getattr(mapper, "primary_key", []))
             if not pk_cols:
                 raise CustomException(msg="模型缺少主键，无法删除")
             if len(pk_cols) > 1:
                 raise CustomException(msg="暂不支持复合主键的批量删除")
-            sql = delete(self.model).where(pk_cols[0].in_(ids))
+            
+            # 只删除有权限的数据
+            sql = delete(self.model).where(pk_cols[0].in_(accessible_ids))
             await self.auth.db.execute(sql)
             await self.auth.db.flush()
         except Exception as e:
@@ -297,15 +327,31 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         - CustomException: 更新失败时抛出异常
         """
         try:
+            # 先查询确认权限,避免更新无权限的数据
+            objs = await self.list(search={"id": ("in", ids)})
+            accessible_ids = [obj.id for obj in objs]
+            
+            # 检查是否所有ID都有权限访问
+            inaccessible_count = len(ids) - len(accessible_ids)
+            if inaccessible_count > 0:
+                raise CustomException(msg=f"无权限更新{inaccessible_count}条数据")
+            
+            if not accessible_ids:
+                return  # 没有可更新的数据
+            
             mapper = sa_inspect(self.model)
             pk_cols = list(getattr(mapper, "primary_key", []))
             if not pk_cols:
                 raise CustomException(msg="模型缺少主键，无法更新")
             if len(pk_cols) > 1:
                 raise CustomException(msg="暂不支持复合主键的批量更新")
-            sql = update(self.model).where(pk_cols[0].in_(ids)).values(**kwargs)
+            
+            # 只更新有权限的数据
+            sql = update(self.model).where(pk_cols[0].in_(accessible_ids)).values(**kwargs)
             await self.auth.db.execute(sql)
             await self.auth.db.flush()
+        except CustomException:
+            raise
         except Exception as e:
             raise CustomException(msg=f"批量更新失败: {str(e)}")
 
@@ -356,8 +402,16 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                     conditions.append(attr.between(val[0], val[1]))
                 elif seq == "!=" and val:
                     conditions.append(attr != val)
-                elif seq in [">", ">=", "<=", "=="] and val:
-                    conditions.append(getattr(attr, seq.replace("==", "__eq__"))(val))
+                elif seq == ">" and val:
+                    conditions.append(attr > val)
+                elif seq == ">=" and val:
+                    conditions.append(attr >= val)
+                elif seq == "<" and val:
+                    conditions.append(attr < val)
+                elif seq == "<=" and val:
+                    conditions.append(attr <= val)
+                elif seq == "==" and val:
+                    conditions.append(attr == val)
             else:
                 conditions.append(attr == value)
         return conditions

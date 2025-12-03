@@ -2,11 +2,15 @@
 
 import logging
 import sys
+import atexit
 from typing_extensions import override
 from loguru import logger
 
 from app.config.path_conf import LOG_DIR
 from app.config.setting import settings
+
+# 全局变量记录日志处理器ID
+_logger_handlers = []
 
 
 class InterceptHandler(logging.Handler):
@@ -39,6 +43,22 @@ class InterceptHandler(logging.Handler):
         )
         
 
+def cleanup_logging():
+    """
+    清理日志资源
+    在程序退出时调用,确保所有日志处理器被正确关闭
+    """
+    global _logger_handlers
+    
+    for handler_id in _logger_handlers:
+        try:
+            logger.remove(handler_id)
+        except Exception:
+            pass
+    
+    _logger_handlers.clear()
+
+
 def setup_logging():
     """
     配置日志系统
@@ -47,8 +67,10 @@ def setup_logging():
     1. 控制台彩色输出
     2. 文件日志轮转
     3. 错误日志单独存储
-    4. 异步日志记录
+    4. 智能异步策略：开发环境同步(避免reload资源泄漏)，生产环境异步(高性能)
     """
+    global _logger_handlers
+    
     # 添加上下文信息
     _ = logger.configure(extra={"app_name": "FastapiAdmin"})
     # 步骤1：移除默认处理器
@@ -66,16 +88,20 @@ def setup_logging():
         "<level>{message}</level>"
     )
 
+    # 智能选择异步策略：开发环境禁用异步(避免reload时资源泄漏)，生产环境启用异步(提升性能)
+    use_async = not settings.DEBUG
+    
     # 步骤3：配置控制台输出
-    _ = logger.add(
+    handler_id = logger.add(
         sys.stdout,
         format=log_format,
         level="DEBUG" if settings.DEBUG else "INFO",
-        enqueue=True,        # 启用异步写入
+        enqueue=use_async,   # 开发同步,生产异步
         backtrace=True,      # 显示完整的异常回溯
         diagnose=True,       # 显示变量值等诊断信息
         colorize=True        # 启用彩色输出
     )
+    _logger_handlers.append(handler_id)
 
     # 步骤4：创建日志目录
     log_dir = LOG_DIR
@@ -83,7 +109,7 @@ def setup_logging():
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # 步骤5：配置常规日志文件
-    _ = logger.add(
+    handler_id = logger.add(
         str(log_dir / "info.log"),
         format=log_format,
         level="INFO",
@@ -91,11 +117,12 @@ def setup_logging():
         retention=30,      # 日志保留天数，超过此天数的日志文件将被自动清理
         compression="gz",
         encoding="utf-8",
-        enqueue=True
+        enqueue=use_async  # 开发同步,生产异步
     )
+    _logger_handlers.append(handler_id)
 
     # 步骤6：配置错误日志文件
-    _ = logger.add(
+    handler_id = logger.add(
         str(log_dir / "error.log"),
         format=log_format,
         level="ERROR",
@@ -103,18 +130,23 @@ def setup_logging():
         retention=30,      # 日志保留天数，超过此天数的日志文件将被自动清理
         compression="gz",
         encoding="utf-8",
-        enqueue=True,
+        enqueue=use_async, # 开发同步,生产异步
         backtrace=True,
         diagnose=True
     )
+    _logger_handlers.append(handler_id)
 
     # 步骤7：配置标准库日志
     logging.basicConfig(handlers=[InterceptHandler()], level="DEBUG" if settings.DEBUG else "INFO", force=True)
     logger_name_list = [name for name in logging.root.manager.loggerDict]
+    
     # 步骤8：配置第三方库日志
     for logger_name in logger_name_list:
         _logger = logging.getLogger(logger_name)
         _logger.handlers = [InterceptHandler()]
         _logger.propagate = False
+    
+    # 注册退出清理函数
+    atexit.register(cleanup_logging)
 
 log = logger

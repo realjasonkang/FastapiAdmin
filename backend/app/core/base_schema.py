@@ -9,9 +9,9 @@ class UserInfoSchema(BaseModel):
     """用户信息模型"""
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description="用户ID")
-    name: str = Field(description="用户姓名")
-    username: str = Field(description="用户名")
+    id: int | None = Field(default=None, description="用户ID")
+    name: str | None = Field(default=None, description="用户姓名")
+    username: str | None = Field(default=None, description="用户名")
 
 
 class CommonSchema(BaseModel):

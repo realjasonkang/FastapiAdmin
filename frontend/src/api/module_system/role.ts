@@ -73,8 +73,6 @@ export default RoleAPI;
 export interface TablePageQuery extends PageQuery {
   name?: string;
   status?: string;
-  created_id?: number;
-  updated_id?: number;
   created_time?: string[];
   updated_time?: string[];
 }
@@ -87,8 +85,6 @@ export interface RoleTable extends BaseType {
   data_scope?: number;
   menus?: permissionMenuType[];
   depts?: permissionDeptType[];
-  created_by?: creatorType;
-  updated_by?: updatorType;
 }
 
 export interface RoleForm extends BaseFormType {

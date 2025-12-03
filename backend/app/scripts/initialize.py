@@ -32,10 +32,10 @@ class InitializeData:
             MenuModel,
             ParamsModel,
             DeptModel,
+            RoleModel,
             DictTypeModel,
             DictDataModel,
             UserModel,
-            RoleModel,
             UserRolesModel,
         ]
     

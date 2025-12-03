@@ -28,13 +28,6 @@
         <el-form-item v-if="isExpand" prop="start_time" label="创建时间">
           <DatePicker v-model="dateRange" @update:model-value="handleDateRangeChange" />
         </el-form-item>
-        <el-form-item v-if="isExpand" prop="created_id" label="创建人">
-          <UserTableSelect
-            v-model="queryFormData.created_id"
-            @confirm-click="handleConfirm"
-            @clear-click="handleQuery"
-          />
-        </el-form-item>
         <!-- 查询、重置、展开/收起按钮 -->
         <el-form-item class="search-buttons">
           <el-button
@@ -403,12 +396,6 @@
               {{ detailFormData.status ? "启用" : "停用" }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="创建人" :span="2">
-            {{ detailFormData.created_by?.name }}
-          </el-descriptions-item>
-          <el-descriptions-item label="更新人" :span="2">
-            {{ detailFormData.updated_by?.name }}
-          </el-descriptions-item>
           <el-descriptions-item label="创建时间" :span="2">
             {{ detailFormData.created_time }}
           </el-descriptions-item>
@@ -503,7 +490,6 @@ defineOptions({
 import { ElMessage, ElMessageBox } from "element-plus";
 import RoleAPI, { RoleTable, RoleForm, TablePageQuery } from "@/api/module_system/role";
 import { useUserStore } from "@/store";
-import UserTableSelect from "@/views/module_system/user/components/UserTableSelect.vue";
 import ExportModal from "@/components/CURD/ExportModal.vue";
 import type { IContentConfig } from "@/components/CURD/types";
 import { QuestionFilled, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
@@ -551,8 +537,6 @@ const queryFormData = reactive<TablePageQuery>({
   page_size: 10,
   name: "",
   status: undefined,
-  created_id: undefined,
-  updated_id: undefined,
   created_time: undefined,
   updated_time: undefined,
 });
@@ -604,11 +588,6 @@ async function handleRefresh() {
 async function handleQuery() {
   queryFormData.page_no = 1;
   loadingData();
-}
-
-// 选择创建人后触发查询
-function handleConfirm() {
-  handleQuery();
 }
 
 // 行复选框选中项变化

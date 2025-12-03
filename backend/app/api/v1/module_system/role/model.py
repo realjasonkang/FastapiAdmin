@@ -59,13 +59,13 @@ class RoleDeptsModel(MappedBase):
     )
 
 
-class RoleModel(ModelMixin, UserMixin):
+class RoleModel(ModelMixin):
     """
     角色模型
     """
     __tablename__: str = "sys_role"
     __table_args__: dict[str, str] = ({'comment': '角色表'})
-    __loader_options__: list[str] = ["menus", "depts", "created_by", "updated_by"]
+    __loader_options__: list[str] = ["menus", "depts"]
 
     name: Mapped[str] = mapped_column(String(40), nullable=False, comment="角色名称")
     code: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True, comment="角色编码")
