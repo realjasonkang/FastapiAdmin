@@ -49,8 +49,8 @@ class NoticeQueryParam:
         notice_title: str | None = Query(None, description="公告标题"),
         notice_type: str | None = Query(None, description="公告类型"),
         status: str | None = Query(None, description="是否可用"),
-        created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
-        updated_time: list[DateTimeStr] | None = Query(None, description="更新时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        updated_time: list[DateTimeStr] | None = Query(None, description="更新时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
         created_id: int | None = Query(None, description="创建人"),
         updated_id: int | None = Query(None, description="更新人"),
     ) -> None:

@@ -84,7 +84,7 @@ class MenuQueryParam:
         type: Literal[1,2,3,4] | None = Query(None, description="菜单类型(1:目录 2:菜单 3:按钮 4:外链)"),
         permission: str | None = Query(None, description="权限标识"),
         status: str | None = Query(None, description="菜单状态(0:启用 1:禁用)"),
-        created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
     ) -> None:
         
         # 模糊查询字段

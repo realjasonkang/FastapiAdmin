@@ -70,7 +70,7 @@ class CustomOAuth2PasswordRequestForm(OAuth2PasswordRequestForm):
 
     def __init__(
             self,
-            grant_type: str | None = Form(default=None, regex='password'),
+            grant_type: str | None = Form(default=None, pattern='password'),
             scope: str = Form(default=''),
             client_id: str | None = Form(default=None),
             client_secret: str | None = Form(default=None),

@@ -159,24 +159,57 @@ class SchedulerUtil:
         from app.api.v1.module_application.job.crud import JobCRUD
         from app.api.v1.module_system.auth.schema import AuthSchema
         log.info('🔎 开始启动定时任务...')
+        
+        # 启动调度器
         scheduler.start()
+        
+        # 添加事件监听器
+        scheduler.add_listener(cls.scheduler_event_listener, EVENT_ALL)
+        
         async with async_db_session() as session:
             async with session.begin():
                 auth = AuthSchema(db=session)
                 job_list = await JobCRUD(auth).get_obj_list_crud()
-                for item in job_list:
-                    cls.remove_job(job_id=item.id)  # 删除旧任务
-                    # 检查任务是否已经存在
-                    existing_job = cls.get_job(job_id=item.id)
-                    if not existing_job:
-                        # 任务不存在才添加
-                        cls.add_job(item)
-                    # 根据数据库中保存的状态来设置任务状态
-                    if hasattr(item, 'status') and item.status == "1":
-                        # 如果任务状态为暂停，则立即暂停刚添加的任务
-                        cls.pause_job(job_id=item.id)
-        scheduler.add_listener(cls.scheduler_event_listener, EVENT_ALL)
-        log.info('✅️ 系统初始定时任务加载成功')
+                
+                # 只在一个实例上初始化任务
+                # 使用Redis锁确保只有一个实例执行任务初始化
+                import redis.asyncio as redis
+                redis_client = redis.Redis(
+                    host=settings.REDIS_HOST,
+                    port=int(settings.REDIS_PORT),
+                    username=settings.REDIS_USER,
+                    password=settings.REDIS_PASSWORD,
+                    db=int(settings.REDIS_DB_NAME),
+                )
+                
+                # 尝试获取锁，过期时间10秒
+                lock_key = "scheduler_init_lock"
+                lock_acquired = await redis_client.set(lock_key, "1", ex=10, nx=True)
+                
+                if lock_acquired:
+                    try:
+                        for item in job_list:
+                            # 检查任务是否已经存在
+                            existing_job = cls.get_job(job_id=item.id)
+                            if existing_job:
+                                cls.remove_job(job_id=item.id)  # 删除旧任务
+                            
+                            # 添加新任务
+                            cls.add_job(item)
+                            
+                            # 根据数据库中保存的状态来设置任务状态
+                            if hasattr(item, 'status') and item.status == "1":
+                                # 如果任务状态为暂停，则立即暂停刚添加的任务
+                                cls.pause_job(job_id=item.id)
+                        log.info('✅️ 系统初始定时任务加载成功')
+                    finally:
+                        # 释放锁
+                        await redis_client.delete(lock_key)
+                else:
+                    # 等待其他实例完成初始化
+                    import asyncio
+                    await asyncio.sleep(2)
+                    log.info('✅️ 定时任务已由其他实例初始化完成')
 
     @classmethod
     async def close_system_scheduler(cls) -> None:
@@ -219,6 +252,63 @@ class SchedulerUtil:
         return scheduler.get_jobs()
 
     @classmethod
+    async def _task_wrapper(cls, job_id, func, *args, **kwargs):
+        """
+        任务执行包装器，添加分布式锁防止同一任务被多个实例同时执行。
+        
+        参数:
+        - job_id: 任务ID
+        - func: 实际要执行的任务函数
+        - *args: 任务函数位置参数
+        - **kwargs: 任务函数关键字参数
+        
+        返回:
+        - 任务函数的返回值
+        """
+        import redis.asyncio as redis
+        import asyncio
+        from app.config.setting import settings
+        
+        # 创建Redis客户端
+        redis_client = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=int(settings.REDIS_PORT),
+            username=settings.REDIS_USER,
+            password=settings.REDIS_PASSWORD,
+            db=int(settings.REDIS_DB_NAME),
+        )
+        
+        # 生成锁键
+        lock_key = f"job_lock:{job_id}"
+        
+        # 设置锁的过期时间（根据任务类型调整，这里设置为30秒）
+        lock_expire = 30
+        lock_acquired = False
+        
+        try:
+            # 尝试获取锁
+            lock_acquired = await redis_client.set(lock_key, "1", ex=lock_expire, nx=True)
+            
+            if lock_acquired:
+                log.info(f"任务 {job_id} 获取执行锁成功")
+                # 执行任务
+                if iscoroutinefunction(func):
+                    return await func(*args, **kwargs)
+                else:
+                    # 对于同步函数，使用线程池执行
+                    loop = asyncio.get_running_loop()
+                    return await loop.run_in_executor(None, func, *args, **kwargs)
+            else:
+                # 获取锁失败，记录日志
+                log.info(f"任务 {job_id} 获取执行锁失败，跳过本次执行")
+                return None
+        finally:
+            # 释放锁
+            if lock_acquired:
+                await redis_client.delete(lock_key)
+                log.info(f"任务 {job_id} 释放执行锁")
+    
+    @classmethod
     def add_job(cls, job_info: JobModel) -> Job:
         """
         根据任务配置创建并添加调度任务。
@@ -237,17 +327,23 @@ class SchedulerUtil:
             module = importlib.import_module(module_path)
             job_func = getattr(module, func_name)
             
+            # 2. 确定任务存储器：优先使用redis，确保分布式环境中任务同步
             if job_info.jobstore is None:
-                job_info.jobstore = 'default'
-            # 2. 确定执行器
+                job_info.jobstore = 'redis'  # 改为默认使用redis存储
+            
+            # 3. 确定执行器
             job_executor = job_info.executor
             if job_executor is None:
                 job_executor = 'default'
-            if job_info.trigger_args is None:
-                    raise ValueError("interval 触发器缺少参数")
             
+            if job_info.trigger_args is None:
+                raise ValueError("触发器缺少参数")
+            
+            # 异步函数必须使用默认执行器
             if iscoroutinefunction(job_func):
                 job_executor = 'default'
+            
+            # 4. 创建触发器
             if job_info.trigger == 'date':
                 trigger = DateTrigger(run_date=job_info.trigger_args)
             elif job_info.trigger == 'interval':
@@ -296,19 +392,20 @@ class SchedulerUtil:
             else:
                 raise ValueError("无效的 trigger 触发器")
 
-            # 3. 添加任务
+            # 5. 添加任务（使用包装器函数）
             job = scheduler.add_job(
-                func=job_func,  # 直接使用函数对象
+                func=cls._task_wrapper,
                 trigger=trigger,
-                args=str(job_info.args).split(',') if job_info.args else None,
-                kwargs=json.loads(job_info.kwargs) if job_info.kwargs else None,
+                args=[str(job_info.id), job_func] + (str(job_info.args).split(',') if job_info.args else []),
+                kwargs=json.loads(job_info.kwargs) if job_info.kwargs else {},
                 id=str(job_info.id),
                 name=job_info.name,
                 coalesce=job_info.coalesce,
-                max_instances=job_info.max_instances,
+                max_instances=1,  # 确保只有一个实例执行
                 jobstore=job_info.jobstore,
                 executor=job_executor,
             )
+            log.info(f"任务 {job_info.id} 添加到 {job_info.jobstore} 存储器成功")
             return job
         except ModuleNotFoundError:
             raise ValueError(f"未找到该模块：{module_path}")

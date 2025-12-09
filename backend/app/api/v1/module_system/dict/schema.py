@@ -49,11 +49,11 @@ class DictTypeQueryParam:
 
     def __init__(
         self,
-        dict_name: str | None = Query(default=None, description="字典名称", max_length=100, example="用户"),
-        dict_type: str | None = Query(default=None, description="字典类型", max_length=100, example="sys_user"),
-        status: str | None = Query(default=None, description="状态（0正常 1停用）", example=True),
-        created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
-        updated_time: list[DateTimeStr] | None = Query(None, description="更新时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        dict_name: str | None = Query(default=None, description="字典名称", max_length=100),
+        dict_type: str | None = Query(default=None, description="字典类型", max_length=100),
+        status: str | None = Query(default=None, description="状态（0正常 1停用）"),
+        created_time: list[DateTimeStr] | None = Query(None, description="创建时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        updated_time: list[DateTimeStr] | None = Query(None, description="更新时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
     ) -> None:
         super().__init__()
         
@@ -120,12 +120,12 @@ class DictDataQueryParam:
 
     def __init__(
         self,
-        dict_label: str | None = Query(default=None, description="字典标签", max_length=100, example="正常"),
-        dict_type: str | None = Query(default=None, description="字典类型", max_length=100, example="sys_user_status"),
-        dict_type_id: int | None = Query(default=None, description="字典类型ID", example=1),
-        status: str | None = Query(default=None, description="状态（0正常 1停用）", example=True),
-        created_time: list[DateTimeStr] | None = Query(default=None, description="创建时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
-        updated_time: list[DateTimeStr] | None = Query(default=None, description="更新时间范围", example=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        dict_label: str | None = Query(default=None, description="字典标签", max_length=100),
+        dict_type: str | None = Query(default=None, description="字典类型", max_length=100),
+        dict_type_id: int | None = Query(default=None, description="字典类型ID"),
+        status: str | None = Query(default=None, description="状态（0正常 1停用）"),
+        created_time: list[DateTimeStr] | None = Query(default=None, description="创建时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
+        updated_time: list[DateTimeStr] | None = Query(default=None, description="更新时间范围", examples=["2025-01-01 00:00:00", "2025-12-31 23:59:59"]),
     ) -> None:
         
         # 模糊查询字段
