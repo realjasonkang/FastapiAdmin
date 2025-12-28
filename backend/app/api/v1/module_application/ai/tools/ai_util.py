@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*- 
 
-from typing import AsyncGenerator
-from openai import AsyncOpenAI, OpenAI
-from openai.types.chat.chat_completion import ChatCompletion
-import httpx
+from typing import Any, AsyncGenerator
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.config.setting import settings
 from app.core.logger import log
@@ -15,18 +14,13 @@ class AIClient:
     """
 
     def __init__(self):
-        self.model = settings.OPENAI_MODEL
-        # 创建一个不带冲突参数的httpx客户端
-        self.http_client = httpx.AsyncClient(
-            timeout=30.0,
-            follow_redirects=True
-        )
-        
-        # 使用自定义的http客户端
-        self.client = AsyncOpenAI(
+        # 使用LangChain的ChatOpenAI类
+        self.client = ChatOpenAI(
             api_key=settings.OPENAI_API_KEY,
             base_url=settings.OPENAI_BASE_URL,
-            http_client=self.http_client
+            model=settings.OPENAI_MODEL,
+            temperature=0.7,
+            streaming=True
         )
 
     def _friendly_error_message(self, e: Exception) -> str:
@@ -73,7 +67,7 @@ class AIClient:
         # 默认兜底
         return f"处理您的请求时出现错误：{msg}"
 
-    async def process(self, query: str)  -> AsyncGenerator[str, None]:
+    async def process(self, query: str)  -> AsyncGenerator[str, Any]:
         """
         处理查询并返回流式响应
 
@@ -81,53 +75,29 @@ class AIClient:
         - query (str): 用户查询。
 
         返回:
-        - AsyncGenerator[str, None]: 流式响应内容。
+        - AsyncGenerator[str, Any]: 流式响应内容。
         """
         system_prompt = """你是一个有用的AI助手，可以帮助用户回答问题和提供帮助。请用中文回答用户的问题。"""
 
         try:
-            # 使用 await 调用异步客户端
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": query}
-                ],
-                stream=True
-            )
+            # 使用LangChain的异步流式生成
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=query)
+            ]
             
-            # 流式返回响应
-            async for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
+            # 使用LangChain的流式响应
+            async for chunk in self.client.astream(messages):
+                if chunk.content:
+                    # 确保只返回字符串类型
+                    if isinstance(chunk.content, str):
+                        yield chunk.content
+                    elif isinstance(chunk.content, (list, dict)):
+                        # 处理列表或字典类型的内容
+                        import json
+                        yield json.dumps(chunk.content)
                     
         except Exception as e:
             # 记录详细错误，返回友好提示
             log.error(f"AI处理查询失败: {str(e)}")
             yield self._friendly_error_message(e)
-
-    async def close(self) -> None:
-        """
-        关闭客户端连接
-        """
-        import asyncio
-        
-        # 安全关闭OpenAI客户端
-        if hasattr(self, 'client'):
-            try:
-                # 检查事件循环是否仍在运行
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    await self.client.close()
-            except Exception as e:
-                log.debug(f"关闭OpenAI客户端时发生异常: {str(e)}")
-        
-        # 安全关闭HTTP客户端
-        if hasattr(self, 'http_client'):
-            try:
-                # 检查事件循环是否仍在运行
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    await self.http_client.aclose()
-            except Exception as e:
-                log.debug(f"关闭HTTP客户端时发生异常: {str(e)}")

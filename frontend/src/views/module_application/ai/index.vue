@@ -81,8 +81,23 @@
                 </strong>
               </div>
               <div class="message-body">
+                <!-- 折叠/展开按钮 -->
+                <el-button
+                  v-if="message.content.length > 200"
+                  text
+                  size="small"
+                  :icon="message.collapsed ? ArrowDown : ArrowUp"
+                  class="fold-button"
+                  @click="toggleMessageFold(message)"
+                >
+                  {{ message.collapsed ? "展开" : "收起" }}
+                </el-button>
                 <!-- 实时显示累积的消息内容 -->
-                <div class="message-text" v-html="formatMessage(message.content)"></div>
+                <div
+                  class="message-text"
+                  :class="{ collapsed: message.collapsed }"
+                  v-html="formatMessage(message.content)"
+                ></div>
                 <!-- 只有内容为空且loading时才显示打字指示器 -->
                 <div
                   v-if="message.type === 'assistant' && message.loading && !message.content"
@@ -169,6 +184,8 @@ import {
   Setting,
   CopyDocument,
   RefreshLeft,
+  ArrowDown,
+  ArrowUp,
 } from "@element-plus/icons-vue";
 import MarkdownIt from "markdown-it";
 import markdownItHighlightjs from "markdown-it-highlightjs";
@@ -182,6 +199,7 @@ interface ChatMessage {
   content: string;
   timestamp: number;
   loading?: boolean;
+  collapsed?: boolean;
 }
 
 // 创建MarkdownIt实例并配置插件
@@ -269,13 +287,8 @@ const connectWebSocket = () => {
     };
 
     ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleWebSocketMessage(data);
-      } catch (err) {
-        console.error("解析消息失败:", err);
-        handleWebSocketMessage({ content: event.data });
-      }
+      // 直接处理文本消息，因为后端发送的是流式文本而不是JSON
+      handleWebSocketMessage({ content: event.data });
     };
 
     ws.onclose = (event) => {
@@ -287,6 +300,8 @@ const connectWebSocket = () => {
       messages.value.forEach((message) => {
         if (message.type === "assistant" && message.loading) {
           message.loading = false;
+          // 检查消息长度并设置折叠状态
+          message.collapsed = message.content.length > 200;
         }
       });
     };
@@ -301,6 +316,8 @@ const connectWebSocket = () => {
       messages.value.forEach((message) => {
         if (message.type === "assistant" && message.loading) {
           message.loading = false;
+          // 检查消息长度并设置折叠状态
+          message.collapsed = message.content.length > 200;
         }
       });
     };
@@ -391,11 +408,8 @@ const sendMessage = async () => {
   try {
     // 发送消息到 WebSocket
     if (ws?.readyState === WebSocket.OPEN) {
-      const payload = {
-        message,
-        timestamp: Date.now(),
-      };
-      ws.send(JSON.stringify(payload));
+      // 直接发送纯文本消息，因为后端期望接收纯文本
+      ws.send(message);
     } else {
       throw new Error("WebSocket 连接未建立");
     }
@@ -417,6 +431,8 @@ const addMessage = (type: "user" | "assistant", content: string) => {
     type,
     content,
     timestamp: Date.now(),
+    // 长消息自动折叠
+    collapsed: content.length > 200,
   };
   messages.value.push(message);
   nextTick(() => scrollToBottom());
@@ -457,6 +473,11 @@ const copyMessage = async (content: string) => {
     document.body.removeChild(textArea);
     ElMessage.success("已复制到剪贴板");
   }
+};
+
+// 折叠/展开消息
+const toggleMessageFold = (message: ChatMessage) => {
+  message.collapsed = !message.collapsed;
 };
 
 // 滚动到底部
@@ -685,11 +706,39 @@ onUnmounted(() => {
           }
 
           .message-body {
+            .fold-button {
+              margin-bottom: 8px;
+              padding: 0;
+              font-size: 12px;
+              color: var(--el-text-color-secondary);
+
+              &:hover {
+                color: var(--el-color-primary);
+              }
+            }
+
             .message-text {
               font-size: 15px;
               line-height: 1.6;
               color: var(--el-text-color-primary);
               word-wrap: break-word;
+              transition: all 0.3s ease;
+
+              &.collapsed {
+                max-height: 120px;
+                overflow: hidden;
+                position: relative;
+
+                &::after {
+                  content: "";
+                  position: absolute;
+                  bottom: 0;
+                  left: 0;
+                  right: 0;
+                  height: 40px;
+                  background: linear-gradient(to bottom, transparent, var(--el-bg-color));
+                }
+              }
 
               :deep(p) {
                 margin: 0 0 12px;
