@@ -1,6 +1,6 @@
 import request from "@/utils/request";
 
-const API_PATH = "/gencode/demo";
+const API_PATH = "/example/demo";
 
 const DemoAPI = {
   getDemoList(query: DemoPageQuery) {
@@ -94,8 +94,26 @@ export interface DemoTable extends BaseType {
   name?: string;
   created_by?: CommonType;
   updated_by?: CommonType;
+  a?: number;
+  b?: number;
+  c?: number;
+  d?: boolean;
+  e?: string;
+  f?: string;
+  g?: string;
+  h?: string;
+  i?: Record<string, any>;
 }
 
 export interface DemoForm extends BaseFormType {
   name?: string;
+  a?: number;
+  b?: number;
+  c?: number;
+  d?: boolean;
+  e?: string;
+  f?: string;
+  g?: string;
+  h?: string;
+  i?: Record<string, any>;
 }

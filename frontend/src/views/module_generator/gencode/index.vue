@@ -435,9 +435,9 @@
                     <el-icon><QuestionFilled /></el-icon>
                   </el-tooltip>
                 </template>
-                <el-input v-model="info.package_name" disabled>
-                  <template #prepend>默认不允许修改</template>
-                  <template #append>目的为简化生成代码</template>
+                <el-input v-model="info.package_name">
+                  <template #prepend>接口路径: api/v1/</template>
+                  <template #append>/{{ info.business_name }}</template>
                 </el-input>
               </el-form-item>
             </el-col>
@@ -449,10 +449,7 @@
                     <el-icon><QuestionFilled /></el-icon>
                   </el-tooltip>
                 </template>
-                <el-input v-model="info.module_name" disabled>
-                  <template #prepend>默认不允许修改</template>
-                  <template #append>目的为简化生成代码</template>
-                </el-input>
+                <el-input v-model="info.module_name" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -488,10 +485,12 @@
                 <el-tree-select
                   v-model="info.parent_menu_id"
                   :data="menuOptions"
-                  placeholder="请选择系统菜单, 不选择默认分配到模块管理（id:7）"
+                  placeholder="请选择系统菜单,不选创建目录"
                   check-strictly
+                  show-checkbox
                   filterable
                   :render-after-expand="false"
+                  clearable
                 />
               </el-form-item>
             </el-col>
@@ -520,8 +519,8 @@
                 <el-descriptions-item :label="info.function_name + '功能，后端序列化层'">
                   backend/app/api/v1/{{ info.module_name }}/{{ info.business_name }}/schema.py
                 </el-descriptions-item>
-                <el-descriptions-item :label="info.function_name + '功能，数据库业务菜单'">
-                  backend/sql/menu/{{ info.module_name }}.{{ info.business_name }}.sql
+                <el-descriptions-item :label="info.function_name + '功能，后端初始化'">
+                  backend/app/api/v1/{{ info.module_name }}/{{ info.business_name }}/__init__.py
                 </el-descriptions-item>
                 <el-descriptions-item :label="info.function_name + '功能，前端接口层'">
                   frontend/src/api/{{ info.module_name }}/{{ info.business_name }}.ts
@@ -748,7 +747,6 @@
                 <el-radio-button value="all">全部</el-radio-button>
                 <el-radio-button value="frontend">前端</el-radio-button>
                 <el-radio-button value="backend">后端</el-radio-button>
-                <el-radio-button value="sql">数据库</el-radio-button>
               </el-radio-group>
               <span class="ml-3 text-sm color-#909399">类型</span>
               <el-checkbox-group v-model="previewTypes" size="small">
@@ -965,8 +963,8 @@ const preview = reactive({
   active_name: "controller.py",
 });
 
-const previewScope = ref<"all" | "frontend" | "backend" | "sql">("all");
-const previewTypeOptions = ["ts", "vue", "python", "sql"];
+const previewScope = ref<"all" | "frontend" | "backend">("all");
+const previewTypeOptions = ["ts", "vue", "python"];
 const previewTypes = ref<string[]>([...previewTypeOptions]);
 const code = ref<string>("");
 const treeData = ref<TreeNode[]>([]);
@@ -1054,16 +1052,13 @@ const filteredTreeData = computed<TreeNode[]>(() => {
         parentPath.some((part) => part === "frontend" || part === "vue") ||
         label.includes(".vue") ||
         label.includes(".ts");
-      const isSqlDatabase = parentPath.some((part) => part === "sql") || label.includes(".sql");
 
       if (previewScope.value === "backend" && !isPythonBackend) return false;
       if (previewScope.value === "frontend" && !isVueFrontend) return false;
-      if (previewScope.value === "sql" && !isSqlDatabase) return false;
     }
 
     // 类型过滤：根据文件内容特征判断类型
     if (label.endsWith(".py")) return previewTypes.value.includes("python");
-    if (label.endsWith(".sql")) return previewTypes.value.includes("sql");
     if (label.endsWith(".vue")) return previewTypes.value.includes("vue");
     if (label.endsWith(".ts")) return previewTypes.value.includes("ts");
 
@@ -1104,7 +1099,6 @@ const handleCopyCode = () => {
 /** 获取文件树节点图标 */
 function getFileTreeNodeIcon(label: string): string {
   if (label.endsWith(".py")) return "python";
-  if (label.endsWith(".sql")) return "sql";
   if (label.endsWith(".vue")) return "vue";
   if (label.endsWith(".ts")) return "typescript";
   return "file";
@@ -1589,9 +1583,10 @@ async function submitForm() {
       return;
     }
 
-    // 提交表单数据，确保columns是必需的
+    // 提交表单数据，确保columns是必需的，并且parent_menu_id总是被包含
     const tableData = {
       ...info,
+      parent_menu_id: info.parent_menu_id ?? null, // 将undefined转换为null，确保属性被传输
       columns: info.columns || [], // 确保columns存在
     };
 

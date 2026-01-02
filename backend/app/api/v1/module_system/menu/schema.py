@@ -44,15 +44,14 @@ class MenuCreateSchema(BaseModel):
                 except Exception:
                     pass
             # 路由名/路径规范
-            import re
-            if "route_name" in values and isinstance(values["route_name"], str):
-                rn = values["route_name"]
-                if rn and not re.match(r"^[A-Za-z][A-Za-z0-9_.-]{1,99}$", rn):
-                    raise ValueError("路由名称需字母开头，仅含字母/数字/_ . -")
             if "route_path" in values and isinstance(values["route_path"], str):
                 rp = values["route_path"]
                 if rp and not rp.startswith("/"):
                     raise ValueError("路由路径需以 / 开头")
+            if "component_path" in values and isinstance(values["component_path"], str):
+                cp = values["component_path"]
+                if cp and cp.startswith("/"):
+                    raise ValueError("组件路径不能以 / 开头")
         return values
 
     @model_validator(mode='after')

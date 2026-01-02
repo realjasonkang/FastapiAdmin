@@ -133,18 +133,26 @@ class MenuService:
         """
         if len(ids) < 1:
             raise CustomException(msg='删除失败，删除对象不能为空')
+        
+        # 获取所有菜单列表，用于构建树形关系
+        all_menus = await MenuCRUD(auth).get_list_crud()
+        
+        # 构建子菜单ID映射
+        child_id_map = get_child_id_map(model_list=all_menus)
+        
+        # 收集所有需要删除的菜单ID，包括直接指定的ID和它们的所有子菜单ID
+        delete_ids_set = set()
+        
         for id in ids:
-            menu = await MenuCRUD(auth).get_by_id_crud(id=id)
-            if not menu:
-                raise CustomException(msg='删除失败，该菜单不存在')
-        # 校验是否存在子级菜单，存在则禁止删除
-        menu_list = await MenuCRUD(auth).get_list_crud()
-        id_map = get_child_id_map(model_list=menu_list)
-        for id in ids:
-            descendants = get_child_recursion(id=id, id_map=id_map)
-            if len(descendants) > 1:
-                raise CustomException(msg='删除失败，存在子级菜单，请先删除子级菜单')
-        await MenuCRUD(auth).delete(ids=ids)
+            # 递归获取该ID的所有子菜单ID
+            all_descendants = get_child_recursion(id=id, id_map=child_id_map)
+            delete_ids_set.update(all_descendants)
+        
+        # 将集合转换为列表
+        delete_ids = list(delete_ids_set)
+        
+        # 执行批量删除操作
+        await MenuCRUD(auth).delete(ids=delete_ids)
 
     @classmethod
     async def set_menu_available_service(cls, auth: AuthSchema, data: BatchSetAvailable) -> None:

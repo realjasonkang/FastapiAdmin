@@ -12,10 +12,7 @@ from app.common.enums import EnvironmentEnum
 
 
 fastapiadmin_cli = typer.Typer()
-
-# 初始化 Alembic 配置
 alembic_cfg = Config("alembic.ini")
-
 
 def create_app() -> FastAPI:
     """创建 FastAPI 应用实例"""
@@ -78,10 +75,6 @@ def run(env: Annotated[EnvironmentEnum, typer.Option("--env", help="运行环境
             factory=True,
             log_config=None
         )
-        
-    except KeyboardInterrupt:
-        from app.utils.console import display_shutdown_info
-        display_shutdown_info()
     except Exception as e:
         raise
     finally:

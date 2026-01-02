@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from re import T
-from starlette.responses import HTMLResponse
 from typing import Any, AsyncGenerator
 from fastapi import Depends, FastAPI, Request, Response
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.concurrency import asynccontextmanager
 from fastapi.openapi.docs import (
@@ -22,13 +21,7 @@ from app.core.discover import router
 from app.core.exceptions import CustomException, handle_exception
 from app.utils.common_util import import_module, import_modules_async
 from app.scripts.initialize import InitializeData
-
-from app.api.v1.module_application.job.tools.ap_scheduler import SchedulerUtil
-from app.api.v1.module_system.params.service import ParamsService
-from app.api.v1.module_system.dict.service import DictDataService
-
-# 导入WebSocket路由器
-from app.api.v1.module_application.ai.ws import WS_AI
+from app.utils.console import console_close, console_run
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
@@ -41,6 +34,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
     返回:
     - AsyncGenerator[Any, Any]: 生命周期上下文生成器。
     """
+    from app.api.v1.module_system.params.service import ParamsService
+    from app.api.v1.module_system.dict.service import DictDataService
+    from app.api.v1.module_application.job.tools.ap_scheduler import SchedulerUtil
+
     try:
         await InitializeData().init_db()
         log.info(f"✅ {settings.DATABASE_TYPE}数据库初始化完成")
@@ -50,22 +47,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
         log.info("✅ Redis系统配置初始化完成")
         await DictDataService().init_dict_service(redis=app.state.redis)
         log.info("✅ Redis数据字典初始化完成")
-        await SchedulerUtil.init_system_scheduler()
-        scheduler_jobs_count = len(SchedulerUtil.get_all_jobs())
-        scheduler_status = SchedulerUtil.get_job_status()
-        log.info(f"✅ 定时任务调度器初始化完成 ({scheduler_jobs_count} 个任务)")
-
-        # 6. 初始化请求限制器
-        await FastAPILimiter.init(
-            redis=app.state.redis,
-            prefix=settings.REQUEST_LIMITER_REDIS_PREFIX,
-            http_callback=http_limit_callback,
-        )
-        log.info("✅ 请求限制器初始化完成")
+        await SchedulerUtil.init_system_scheduler(redis=app.state.redis)
+        log.info(f"✅ 定时任务调度器初始化完成")
+        await FastAPILimiter.init(redis=app.state.redis, prefix=settings.REQUEST_LIMITER_REDIS_PREFIX, http_callback=http_limit_callback, ws_callback=ws_limit_callback)
+        log.info("✅ 请求限流器初始化完成")
         
         # 导入并显示最终的启动信息面板
-        from app.utils.console import run as console_run
         from app.common.enums import EnvironmentEnum
+        scheduler_jobs_count = len(SchedulerUtil.get_all_jobs())
+        scheduler_status = SchedulerUtil.get_job_status()
         console_run(
             host=settings.SERVER_HOST,
             port=settings.SERVER_PORT,
@@ -88,10 +78,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
         log.info("✅ 定时任务调度器已关闭")
         await FastAPILimiter.close()
         log.info("✅ 请求限制器已关闭")
+        console_close()
 
     except Exception as e:
         log.error(f"❌ 应用关闭过程中发生错误: {str(e)}")
-        
 
 def register_middlewares(app: FastAPI) -> None:
     """
@@ -131,6 +121,7 @@ def register_routers(app: FastAPI) -> None:
     返回:
     - None
     """
+    from app.api.v1.module_application.ai.ws import WS_AI
     # 手动注册WebSocket路由，不使用速率限制器
     app.include_router(router=WS_AI, dependencies=[Depends(WebSocketRateLimiter(times=1, seconds=5))])
     # 先将动态路由注册到应用，使用速率限制器
@@ -203,7 +194,6 @@ async def http_limit_callback(request: Request, response: Response, expire: int)
         data={'Retry-After': str(expires)},
     )
 
-# 为WebSocket添加默认的回调函数
 async def ws_limit_callback(ws: WebSocket, expire: int):
     """
     WebSocket请求限制时的默认回调函数

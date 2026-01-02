@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from datetime import date, time, datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from fastapi import Query
 
 from app.core.base_schema import BaseSchema, UserBySchema
-from app.core.validator import DateTimeStr
+from app.core.validator import DateTimeStr, DateStr, TimeStr
 
 
 class DemoCreateSchema(BaseModel):
@@ -12,6 +13,15 @@ class DemoCreateSchema(BaseModel):
     name: str = Field(..., description='名称')
     status: str = Field(default="0", description="是否启用(0:启用 1:禁用)")
     description: str | None = Field(default=None, description="描述")
+    a: int | None = Field(default=None, description="整数")
+    b: int | None = Field(default=None, description="大整数")
+    c: float | None = Field(default=None, description="浮点数")
+    d: bool = Field(default=True, description="布尔型")
+    e: date | None = Field(default=None, description="日期")
+    f: time | None = Field(default=None, description="时间")
+    g: datetime | None = Field(default=None, description="日期时间")
+    h: str | None = Field(default=None, description="长文本")
+    i: dict | None = Field(default=None, description="元数据(JSON格式)")
 
     @field_validator('name')
     @classmethod
@@ -50,6 +60,11 @@ class DemoUpdateSchema(DemoCreateSchema):
 class DemoOutSchema(DemoCreateSchema, BaseSchema, UserBySchema):
     """响应模型"""
     model_config = ConfigDict(from_attributes=True)
+    
+    # 覆盖日期时间字段，使用可序列化的类型
+    e: DateStr | None = Field(default=None, description="日期")
+    f: TimeStr | None = Field(default=None, description="时间")
+    g: DateTimeStr | None = Field(default=None, description="日期时间")
 
 
 class DemoQueryParam:

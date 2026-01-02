@@ -54,7 +54,7 @@
         <!-- 查询、重置、展开/收起按钮 -->
         <el-form-item>
           <el-button
-            v-hasPerm="['module_gencode:demo:query']"
+            v-hasPerm="['module_example:demo:query']"
             type="primary"
             icon="search"
             @click="handleQuery"
@@ -62,7 +62,7 @@
             查询
           </el-button>
           <el-button
-            v-hasPerm="['module_gencode:demo:query']"
+            v-hasPerm="['module_example:demo:query']"
             icon="refresh"
             @click="handleResetQuery"
           >
@@ -105,7 +105,7 @@
           <el-row :gutter="10">
             <el-col :span="1.5">
               <el-button
-                v-hasPerm="['module_gencode:demo:create']"
+                v-hasPerm="['module_example:demo:create']"
                 type="success"
                 icon="plus"
                 @click="handleOpenDialog('create')"
@@ -115,7 +115,7 @@
             </el-col>
             <el-col :span="1.5">
               <el-button
-                v-hasPerm="['module_gencode:demo:delete']"
+                v-hasPerm="['module_example:demo:delete']"
                 type="danger"
                 icon="delete"
                 :disabled="selectIds.length === 0"
@@ -125,7 +125,7 @@
               </el-button>
             </el-col>
             <el-col :span="1.5">
-              <el-dropdown v-hasPerm="['module_gencode:demo:patch']" trigger="click">
+              <el-dropdown v-hasPerm="['module_example:demo:patch']" trigger="click">
                 <el-button type="default" :disabled="selectIds.length === 0" icon="ArrowDown">
                   更多
                 </el-button>
@@ -148,7 +148,7 @@
             <el-col :span="1.5">
               <el-tooltip content="导入">
                 <el-button
-                  v-hasPerm="['module_gencode:demo:import']"
+                  v-hasPerm="['module_example:demo:import']"
                   type="success"
                   icon="upload"
                   circle
@@ -159,7 +159,7 @@
             <el-col :span="1.5">
               <el-tooltip content="导出">
                 <el-button
-                  v-hasPerm="['module_gencode:demo:export']"
+                  v-hasPerm="['module_example:demo:export']"
                   type="warning"
                   icon="download"
                   circle
@@ -181,7 +181,7 @@
             <el-col :span="1.5">
               <el-tooltip content="刷新">
                 <el-button
-                  v-hasPerm="['module_gencode:demo:query']"
+                  v-hasPerm="['module_example:demo:query']"
                   type="primary"
                   icon="refresh"
                   circle
@@ -244,6 +244,12 @@
           min-width="140"
         />
         <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'uuid')?.show"
+          label="UUID"
+          prop="uuid"
+          min-width="180"
+        />
+        <el-table-column
           v-if="tableColumns.find((col) => col.prop === 'status')?.show"
           label="状态"
           prop="status"
@@ -253,6 +259,72 @@
             <el-tag :type="scope.row.status ? 'success' : 'info'">
               {{ scope.row.status ? "启用" : "停用" }}
             </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'a')?.show"
+          label="整数"
+          prop="a"
+          min-width="100"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'b')?.show"
+          label="大整数"
+          prop="b"
+          min-width="120"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'c')?.show"
+          label="浮点数"
+          prop="c"
+          min-width="100"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'd')?.show"
+          label="布尔值"
+          prop="d"
+          min-width="100"
+        >
+          <template #default="scope">
+            <el-tag :type="scope.row.d ? 'success' : 'danger'">
+              {{ scope.row.d ? "是" : "否" }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'e')?.show"
+          label="日期"
+          prop="e"
+          min-width="120"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'f')?.show"
+          label="时间"
+          prop="f"
+          min-width="120"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'g')?.show"
+          label="日期时间"
+          prop="g"
+          min-width="180"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'h')?.show"
+          label="长文本"
+          prop="h"
+          min-width="140"
+        />
+        <el-table-column
+          v-if="tableColumns.find((col) => col.prop === 'i')?.show"
+          label="元数据"
+          prop="i"
+          min-width="140"
+        >
+          <template #default="scope">
+            <el-tooltip :content="JSON.stringify(scope.row.i)" placement="top">
+              <div class="json-preview">{{ JSON.stringify(scope.row.i) }}</div>
+            </el-tooltip>
           </template>
         </el-table-column>
         <el-table-column
@@ -302,7 +374,7 @@
         >
           <template #default="scope">
             <el-button
-              v-hasPerm="['module_gencode:demo:detail']"
+              v-hasPerm="['module_example:demo:detail']"
               type="info"
               size="small"
               link
@@ -312,7 +384,7 @@
               详情
             </el-button>
             <el-button
-              v-hasPerm="['module_gencode:demo:update']"
+              v-hasPerm="['module_example:demo:update']"
               type="primary"
               size="small"
               link
@@ -322,7 +394,7 @@
               编辑
             </el-button>
             <el-button
-              v-hasPerm="['module_gencode:demo:delete']"
+              v-hasPerm="['module_example:demo:delete']"
               type="danger"
               size="small"
               link
@@ -358,10 +430,44 @@
           <el-descriptions-item label="名称" :span="2">
             {{ detailFormData.name }}
           </el-descriptions-item>
+          <el-descriptions-item label="UUID" :span="2">
+            {{ detailFormData.uuid }}
+          </el-descriptions-item>
           <el-descriptions-item label="状态" :span="2">
             <el-tag :type="detailFormData.status ? 'success' : 'danger'">
               {{ detailFormData.status ? "启用" : "停用" }}
             </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="整数" :span="2">
+            {{ detailFormData.a }}
+          </el-descriptions-item>
+          <el-descriptions-item label="大整数" :span="2">
+            {{ detailFormData.b }}
+          </el-descriptions-item>
+          <el-descriptions-item label="浮点数" :span="2">
+            {{ detailFormData.c }}
+          </el-descriptions-item>
+          <el-descriptions-item label="布尔值" :span="2">
+            <el-tag :type="detailFormData.d ? 'success' : 'danger'">
+              {{ detailFormData.d ? "是" : "否" }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="日期" :span="2">
+            {{ detailFormData.e }}
+          </el-descriptions-item>
+          <el-descriptions-item label="时间" :span="2">
+            {{ detailFormData.f }}
+          </el-descriptions-item>
+          <el-descriptions-item label="日期时间" :span="2">
+            {{ detailFormData.g }}
+          </el-descriptions-item>
+          <el-descriptions-item label="长文本" :span="2">
+            {{ detailFormData.h }}
+          </el-descriptions-item>
+          <el-descriptions-item label="元数据" :span="2">
+            <el-tooltip :content="JSON.stringify(detailFormData.i)" placement="top">
+              <div class="json-preview">{{ JSON.stringify(detailFormData.i) }}</div>
+            </el-tooltip>
           </el-descriptions-item>
           <el-descriptions-item label="描述" :span="2">
             {{ detailFormData.description }}
@@ -398,6 +504,54 @@
               <el-radio value="0">启用</el-radio>
               <el-radio value="1">停用</el-radio>
             </el-radio-group>
+          </el-form-item>
+          <el-form-item label="整数" prop="a">
+            <el-input-number v-model="formData.a" placeholder="请输入整数" />
+          </el-form-item>
+          <el-form-item label="大整数" prop="b">
+            <el-input-number v-model="formData.b" placeholder="请输入大整数" />
+          </el-form-item>
+          <el-form-item label="浮点数" prop="c">
+            <el-input-number
+              v-model="formData.c"
+              placeholder="请输入浮点数"
+              :step="0.01"
+              :precision="2"
+            />
+          </el-form-item>
+          <el-form-item label="布尔值" prop="d">
+            <el-switch v-model="formData.d" />
+          </el-form-item>
+          <el-form-item label="日期" prop="e">
+            <el-date-picker
+              v-model="formData.e"
+              type="date"
+              placeholder="请选择日期"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item label="时间" prop="f">
+            <el-time-picker v-model="formData.f" placeholder="请选择时间" style="width: 100%" />
+          </el-form-item>
+          <el-form-item label="日期时间" prop="g">
+            <el-date-picker
+              v-model="formData.g"
+              type="datetime"
+              placeholder="请选择日期时间"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item label="长文本" prop="h">
+            <el-input v-model="formData.h" :rows="4" type="textarea" placeholder="请输入长文本" />
+          </el-form-item>
+          <el-form-item label="元数据" prop="i">
+            <el-input
+              :model-value="JSON.stringify(formData.i)"
+              :rows="4"
+              type="textarea"
+              placeholder="请输入JSON格式的元数据"
+              @update:model-value="(val) => (formData.i = val ? JSON.parse(val) : undefined)"
+            />
           </el-form-item>
           <el-form-item label="描述" prop="description">
             <el-input
@@ -451,7 +605,7 @@ defineOptions({
 import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { ResultEnum } from "@/enums/api/result.enum";
-import DemoAPI, { DemoTable, DemoForm, DemoPageQuery } from "@/api/module_gencode/demo";
+import DemoAPI, { DemoTable, DemoForm, DemoPageQuery } from "@/api/module_example/demo";
 import ImportModal from "@/components/CURD/ImportModal.vue";
 import ExportModal from "@/components/CURD/ExportModal.vue";
 import DatePicker from "@/components/DatePicker/index.vue";
@@ -477,7 +631,17 @@ const tableColumns = ref([
   { prop: "selection", label: "选择框", show: true },
   { prop: "index", label: "序号", show: true },
   { prop: "name", label: "名称", show: true },
+  { prop: "uuid", label: "UUID", show: true },
   { prop: "status", label: "状态", show: true },
+  { prop: "a", label: "整数", show: true },
+  { prop: "b", label: "大整数", show: true },
+  { prop: "c", label: "浮点数", show: true },
+  { prop: "d", label: "布尔值", show: true },
+  { prop: "e", label: "日期", show: true },
+  { prop: "f", label: "时间", show: true },
+  { prop: "g", label: "日期时间", show: true },
+  { prop: "h", label: "长文本", show: true },
+  { prop: "i", label: "元数据", show: true },
   { prop: "description", label: "描述", show: true },
   { prop: "created_time", label: "创建时间", show: true },
   { prop: "updated_time", label: "更新时间", show: true },
@@ -489,7 +653,17 @@ const tableColumns = ref([
 // 仅用于导出字段的列（排除非数据列及嵌套对象列）
 const exportColumns = [
   { prop: "name", label: "名称" },
+  { prop: "uuid", label: "UUID" },
   { prop: "status", label: "状态" },
+  { prop: "a", label: "整数" },
+  { prop: "b", label: "大整数" },
+  { prop: "c", label: "浮点数" },
+  { prop: "d", label: "布尔值" },
+  { prop: "e", label: "日期" },
+  { prop: "f", label: "时间" },
+  { prop: "g", label: "日期时间" },
+  { prop: "h", label: "长文本" },
+  { prop: "i", label: "元数据" },
   { prop: "description", label: "描述" },
   { prop: "created_time", label: "创建时间" },
   { prop: "updated_time", label: "更新时间" },
@@ -497,7 +671,7 @@ const exportColumns = [
 
 // 导入/导出配置
 const curdContentConfig = {
-  permPrefix: "module_gencode:demo",
+  permPrefix: "module_example:demo",
   cols: exportColumns as any,
   importTemplate: () => DemoAPI.downloadTemplateDemo(),
   exportsAction: async (params: any) => {
@@ -564,6 +738,15 @@ const formData = reactive<DemoForm>({
   name: "",
   status: "0",
   description: undefined,
+  a: undefined,
+  b: undefined,
+  c: undefined,
+  d: true,
+  e: undefined,
+  f: undefined,
+  g: undefined,
+  h: undefined,
+  i: undefined,
 });
 
 // 弹窗状态
@@ -642,7 +825,16 @@ const initialFormData: DemoForm = {
   id: undefined,
   name: "",
   status: "0",
-  description: "",
+  description: undefined,
+  a: undefined,
+  b: undefined,
+  c: undefined,
+  d: true,
+  e: undefined,
+  f: undefined,
+  g: undefined,
+  h: undefined,
+  i: undefined,
 };
 
 // 重置表单
@@ -692,11 +884,48 @@ async function handleSubmit() {
   dataFormRef.value.validate(async (valid: any) => {
     if (valid) {
       loading.value = true;
+      // 处理元数据字段，将字符串转换为JSON对象
+      const submitData = { ...formData };
+      if (submitData.i && typeof submitData.i === "string") {
+        try {
+          submitData.i = JSON.parse(submitData.i);
+        } catch (error: any) {
+          ElMessage.error("元数据格式错误，请输入有效的JSON字符串" + error.message);
+          loading.value = false;
+          return;
+        }
+      }
+
+      // 处理时间字段格式
+      const formatDate = (date: Date | string | undefined): string | undefined => {
+        if (!date) return undefined;
+        const d = typeof date === "string" ? new Date(date) : date;
+        return d.toISOString().split("T")[0]; // 只保留日期部分 YYYY-MM-DD
+      };
+
+      const formatTime = (time: Date | string | undefined): string | undefined => {
+        if (!time) return undefined;
+        const t = typeof time === "string" ? new Date(time) : time;
+        return t.toTimeString().split(" ")[0]; // 只保留时间部分 HH:MM:SS
+      };
+
+      const formatDateTime = (datetime: Date | string | undefined): string | undefined => {
+        if (!datetime) return undefined;
+        const dt = typeof datetime === "string" ? new Date(datetime) : datetime;
+        const datePart = dt.toISOString().split("T")[0];
+        const timePart = dt.toTimeString().split(" ")[0];
+        return `${datePart} ${timePart}`; // 日期时间格式 YYYY-MM-DD HH:MM:SS
+      };
+
+      // 应用格式化
+      submitData.e = formatDate(submitData.e);
+      submitData.f = formatTime(submitData.f);
+      submitData.g = formatDateTime(submitData.g);
       // 根据弹窗传入的参数(deatil\create\update)判断走什么逻辑
       const id = formData.id;
       if (id) {
         try {
-          await DemoAPI.updateDemo(id, { id, ...formData });
+          await DemoAPI.updateDemo(id, { id, ...submitData });
           dialogVisible.visible = false;
           resetForm();
           handleCloseDialog();
@@ -708,7 +937,7 @@ async function handleSubmit() {
         }
       } else {
         try {
-          await DemoAPI.createDemo(formData);
+          await DemoAPI.createDemo(submitData);
           dialogVisible.visible = false;
           resetForm();
           handleCloseDialog();

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy.engine.row import Row
-from sqlalchemy import and_, select, text
+from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy import Inspector, and_, select, text, inspect
 from typing import Sequence
 from sqlglot.expressions import Expression
 
@@ -128,79 +128,41 @@ class GenTableCRUD(CRUDBase[GenTableModel, GenTableSchema, GenTableSchema]):
         返回:
         - list[dict]: 数据库表列表信息（已转为可序列化字典）。
         """
-
-        # 使用更健壮的方式检测数据库方言
-        if settings.DATABASE_TYPE == "postgres":
-            query_sql = (
-                select(
-                    text("t.table_catalog as database_name"),
-                    text("t.table_name as table_name"),
-                    text("t.table_type as table_type"),
-                    text("pd.description as table_comment"),
-                )
-                .select_from(text(
-                    "information_schema.tables t \n"
-                    "LEFT JOIN pg_catalog.pg_class c ON c.relname = t.table_name \n"
-                    "LEFT JOIN pg_catalog.pg_namespace n ON n.nspname = t.table_schema AND c.relnamespace = n.oid \n"
-                    "LEFT JOIN pg_catalog.pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0"
-                ))
-                .where(
-                    and_(
-                        text("t.table_catalog = (select current_database())"),
-                        text("t.is_insertable_into = 'YES'"),
-                        text("t.table_schema = 'public'"),
-                    )
-                )
-            )
-        else:
-            query_sql = (
-                select(
-                    text("table_schema as database_name"),
-                    text("table_name as table_name"),
-                    text("table_type as table_type"),
-                    text("table_comment as table_comment"),
-                )
-                .select_from(text("information_schema.tables"))
-                .where(
-                    and_(
-                        text("table_schema = (select database())"),
-                    )
-                )
-            )
+        database_name = settings.DATABASE_NAME
+        database_type = settings.DATABASE_TYPE
         
-        # 动态条件构造
-        params = {}
-        if search and search.table_name:
-            query_sql = query_sql.where(
-                text("lower(table_name) like lower(:table_name)")
-            )
-            params['table_name'] = f"%{search.table_name}%"
-        if search and search.table_comment:
-            # 对于PostgreSQL，表注释字段是pd.description，而不是table_comment
-            if settings.DATABASE_TYPE == "postgres":
-                query_sql = query_sql.where(
-                    text("lower(pd.description) like lower(:table_comment)")
-                )
-            else:
-                query_sql = query_sql.where(
-                    text("lower(table_comment) like lower(:table_comment)")
-                )
-            params['table_comment'] = f"%{search.table_comment}%"
-
-        # 执行查询并绑定参数
-        all_data = (await self.auth.db.execute(query_sql, params)).fetchall()
-
-        # 将Row对象转换为字典列表，解决JSON序列化问题
+        from app.core.database import engine
+        inspector: Inspector = inspect(engine)
+        table_names = inspector.get_table_names()
+        
         dict_data = []
-        for row in all_data:
-            # 检查row是否为Row对象
-            if isinstance(row, Row):
-                # 使用._mapping获取字典
-                dict_row = GenDBTableSchema(**dict(row._mapping)).model_dump()
-                dict_data.append(dict_row)
-            else:
-                dict_row = GenDBTableSchema(**dict(row)).model_dump()
-                dict_data.append(dict_row)
+        for table_name in table_names:
+            try:
+                table_comment = inspector.get_table_comment(table_name)
+                comment = table_comment.get('text', '') if isinstance(table_comment, dict) else table_comment
+                table_comment = comment or ""
+            except Exception as e:
+                log.warning(f"获取表 {table_name} 的注释失败: {e}")
+                table_comment = ""
+            
+            # 统一处理 search 为 None 的情况，避免重复判断
+            if search:
+                # 表名过滤：忽略大小写，支持模糊匹配
+                if search.table_name and search.table_name.lower() not in table_name.lower():
+                    continue
+                # 表注释过滤：忽略大小写，支持模糊匹配；table_comment 为 None 时视为空字符串
+                if search.table_comment and search.table_comment not in table_comment:
+                    continue
+            
+            table_info = {
+                "database_name": database_name,
+                "table_name": table_name,
+                "table_type": database_type,
+                "table_comment": table_comment
+            }
+            
+            dict_data.append(GenDBTableSchema(**table_info).model_dump())
+        
         return dict_data
 
     async def get_db_table_list_by_names(self, table_names: list[str]) -> list[GenDBTableSchema]:
@@ -216,69 +178,19 @@ class GenTableCRUD(CRUDBase[GenTableModel, GenTableSchema, GenTableSchema]):
         # 处理空列表情况
         if not table_names:
             return []
-            
-        # 使用更健壮的方式检测数据库方言
-        if settings.DATABASE_TYPE == "postgres":
-            # PostgreSQL使用ANY操作符和正确的参数绑定
-            query_sql = """
-            SELECT
-                t.table_catalog as database_name,
-                t.table_name as table_name,
-                t.table_type as table_type,
-                pd.description as table_comment
-            FROM
-                information_schema.tables t
-            LEFT JOIN pg_catalog.pg_class c ON c.relname = t.table_name
-            LEFT JOIN pg_catalog.pg_namespace n ON n.nspname = t.table_schema AND c.relnamespace = n.oid
-            LEFT JOIN pg_catalog.pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0
-            WHERE
-                t.table_catalog = (select current_database()) 
-                AND t.is_insertable_into = 'YES'
-                AND t.table_schema = 'public'
-                AND t.table_name = ANY(:table_names)
-            """
-        else:
-            query_sql = """
-            SELECT
-                table_schema as database_name,
-                table_name as table_name,
-                table_type as table_type,
-                table_comment as table_comment
-            FROM
-                information_schema.tables
-            WHERE
-                table_schema = (select database())
-                AND table_name IN :table_names
-            """
-        
-        # 创建新的数据库会话上下文来执行查询，避免受外部事务状态影响
-        try:
-            # 去重表名列表，避免重复查询
-            unique_table_names = list(set(table_names))
-            
-            # 使用只读事务执行查询，不影响主事务
-            if settings.DATABASE_TYPE == "postgres":
-                gen_db_table_list = (await self.auth.db.execute(text(query_sql), {"table_names": unique_table_names})).fetchall()
-            else:
-                gen_db_table_list = (await self.auth.db.execute(text(query_sql), {"table_names": tuple(unique_table_names)})).fetchall()
-        except Exception as e:
-            log.error(f"查询表信息时发生错误: {e}")
-            # 查询错误时直接抛出，不需要事务处理
-            raise
-        
-        # 将Row对象转换为字典列表，解决JSON序列化问题
-        dict_data = []
-        for row in gen_db_table_list:
-            # 检查row是否为Row对象
-            if isinstance(row, Row):
-                # 使用._mapping获取字典
-                dict_row = GenDBTableSchema(**dict(row._mapping))
-                dict_data.append(dict_row)
-            else:
-                dict_row = GenDBTableSchema(**dict(row))
-                dict_data.append(dict_row)
-        return dict_data
+        # 调用get_db_table_list获取所有表信息
+        all_tables = await self.get_db_table_list()
 
+        # 过滤出指定名称的表
+        table_names_set = set(table_names)  # 转换为集合以提高查找效率
+        filtered_tables = [
+            GenDBTableSchema(**table) 
+            for table in all_tables 
+            if table["table_name"] in table_names_set
+        ]
+        
+        return filtered_tables
+        
     async def check_table_exists(self, table_name: str) -> bool:
         """
         检查数据库中是否已存在指定表名的表。
@@ -290,14 +202,10 @@ class GenTableCRUD(CRUDBase[GenTableModel, GenTableSchema, GenTableSchema]):
         - bool: 如果表存在返回True，否则返回False。
         """
         try:
-            # 根据不同数据库类型使用不同的查询方式
-            if settings.DATABASE_TYPE.lower() == 'mysql':
-                query = text("SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name")
-            else:
-                query = text("SELECT 1 FROM pg_tables WHERE tablename = :table_name")
-            
-            result = await self.auth.db.execute(query, {"table_name": table_name})
-            return result.scalar() is not None
+            # 使用SQLAlchemy的inspect功能检查表是否存在，这是数据库无关的方法
+            bind = self.auth.db.get_bind()
+            inspector: Inspector = inspect(bind)
+            return inspector.has_table(table_name)
         except Exception as e:
             log.error(f"检查表格存在性时发生错误: {e}")
             # 出错时返回False，避免误报表已存在
@@ -355,6 +263,82 @@ class GenTableColumnCRUD(CRUDBase[GenTableColumnModel, GenTableColumnSchema, Gen
         - auth (AuthSchema): 认证信息模型
         """
         super().__init__(model=GenTableColumnModel, auth=auth)
+    
+    @staticmethod
+    def _sync_get_table_columns(database_type, table_name):
+        """
+        同步函数：获取数据库表的列信息
+        
+        参数:
+        - database_type: 数据库类型
+        - table_name: 表名
+        
+        返回:
+        - list: 列信息列表
+        """
+        # 使用SQLAlchemy Inspector获取表列信息
+        from app.core.database import engine
+        inspector: Inspector = inspect(engine)
+        
+        # 获取列信息
+        columns = inspector.get_columns(table_name)
+        
+        # 获取主键信息
+        try:
+            pk_constraint = inspector.get_pk_constraint(table_name)
+            primary_keys = set(pk_constraint.get("constrained_columns", [])) if pk_constraint else set()
+        except Exception:
+            primary_keys = set()
+        
+        # 获取唯一约束信息
+        unique_columns = set()
+        try:
+            unique_constraints = inspector.get_unique_constraints(table_name)
+            for constraint in unique_constraints:
+                unique_columns.update(constraint.get("column_names", []))
+        except Exception:
+            pass
+        
+        # 处理列信息
+        columns_list = []
+        for idx, column in enumerate(columns):
+            # 获取列的基本信息
+            column_name = column['name']
+            column_type = str(column['type'])
+            is_nullable = column.get('nullable', True)
+            column_default = column.get('default', None)
+            # 获取列注释（如果有的话）
+            column_comment = column.get('comment', '')
+            # 判断是否为主键
+            is_pk = column_name in primary_keys
+            # 判断是否为唯一约束
+            is_unique = column_name in unique_columns
+            # 判断是否为自增列（基于数据库类型和列类型）
+            is_increment = column.get('autoincrement', False) in (True, 'auto')
+            # 获取列长度（如果适用）
+            column_length = None
+            # 使用getattr安全地获取length属性，避免访问不存在时抛出AttributeError
+            column_length = getattr(column['type'], 'length', None)
+            if column_length is not None:
+                column_length = str(getattr(column['type'], 'length', ''))
+            
+            # 构造列信息字典
+            column_info = {
+                "column_name": column_name,
+                "column_comment": column_comment or '',
+                "column_type": column_type,
+                "column_length": column_length or '',
+                "column_default": str(column_default) if column_default is not None else '',
+                "sort": idx + 1,  # 序号从1开始
+                "is_pk": 1 if is_pk else 0,
+                "is_increment": 1 if is_increment else 0,
+                "is_nullable": 1 if is_nullable else 0,
+                "is_unique": 1 if is_unique else 0
+            }
+            
+            columns_list.append(column_info)
+        
+        return columns_list
 
     async def get_gen_table_column_by_id(self, id: int, preload: list | None = None) -> GenTableColumnModel | None:
         """根据业务表字段ID获取业务表字段信息。
@@ -408,99 +392,17 @@ class GenTableColumnCRUD(CRUDBase[GenTableColumnModel, GenTableColumnSchema, Gen
             raise ValueError("数据表名称不能为空")
 
         try:
-            if settings.DATABASE_TYPE == "mysql":
-                query_sql = """
-                    SELECT
-                        c.column_name AS column_name,
-                        c.column_comment AS column_comment,
-                        c.column_type AS column_type,
-                        c.character_maximum_length AS column_length,
-                        c.column_default AS column_default,
-                        c.ordinal_position AS sort,
-                        (CASE WHEN c.column_key = 'PRI' THEN 1 ELSE 0 END) AS is_pk,
-                        (CASE WHEN c.extra = 'auto_increment' THEN 1 ELSE 0 END) AS is_increment,
-                        (CASE WHEN (c.is_nullable = 'NO' AND c.column_key != 'PRI') THEN 1 ELSE 0 END) AS is_nullable,
-                        (CASE 
-                            WHEN c.column_name IN (
-                                SELECT k.column_name
-                                FROM information_schema.key_column_usage k
-                                JOIN information_schema.table_constraints t
-                                ON k.constraint_name = t.constraint_name
-                                WHERE k.table_schema = c.table_schema
-                                AND k.table_name = c.table_name
-                                AND t.constraint_type = 'UNIQUE'
-                            ) THEN 1 ELSE 0 
-                        END) AS is_unique
-                    FROM 
-                        information_schema.columns c
-                    WHERE c.table_schema = (SELECT DATABASE())
-                        AND c.table_name = :table_name
-                    ORDER BY 
-                        c.ordinal_position
-                """
-            else:
-                query_sql = """
-                    SELECT
-                        c.column_name AS column_name,
-                        COALESCE(pgd.description, '') AS column_comment,
-                        c.udt_name AS column_type,
-                        c.character_maximum_length AS column_length,
-                        c.column_default AS column_default,
-                        c.ordinal_position AS sort,
-                        (CASE WHEN EXISTS (
-                            SELECT 1 FROM information_schema.table_constraints tc
-                            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
-                            WHERE tc.table_name = c.table_name
-                            AND tc.constraint_type = 'PRIMARY KEY'
-                            AND ccu.column_name = c.column_name
-                        ) THEN 1 ELSE 0 END) AS is_pk,
-                        (CASE WHEN c.column_default LIKE 'nextval%' THEN 1 ELSE 0 END) AS is_increment,
-                        (CASE WHEN c.is_nullable = 'NO' THEN 1 ELSE 0 END) AS is_nullable,
-                        (CASE WHEN EXISTS (
-                            SELECT 1 FROM information_schema.table_constraints tc
-                            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
-                            WHERE tc.table_name = c.table_name
-                            AND tc.constraint_type = 'UNIQUE'
-                            AND ccu.column_name = c.column_name
-                        ) THEN 1 ELSE 0 END) AS is_unique
-                    FROM
-                        information_schema.columns c
-                    LEFT JOIN pg_catalog.pg_description pgd ON 
-                        pgd.objoid = (SELECT oid FROM pg_class WHERE relname = c.table_name)
-                        AND pgd.objsubid = c.ordinal_position
-                    WHERE c.table_catalog = current_database()
-                        AND c.table_schema = 'public'
-                        AND c.table_name = :table_name
-                    ORDER BY 
-                        c.ordinal_position
-                """
+            # 直接调用同步方法获取列信息
+            columns_info = GenTableColumnCRUD._sync_get_table_columns(
+                settings.DATABASE_TYPE,
+                table_name
+            )
             
-            query = text(query_sql).bindparams(table_name=table_name)
-            result = await self.auth.db.execute(query)
-            rows = result.fetchall() if result else []
-            
-            # 确保rows是可迭代对象
-            if not rows:
-                return []
-            
+            # 转换为GenTableColumnOutSchema对象列表
             columns_list = []
-            for row in rows:
-                # 防御性编程：检查row是否有足够的元素
-                if len(row) >= 10:
-                    columns_list.append(
-                        GenTableColumnOutSchema(
-                            column_name=row[0],
-                            column_comment=row[1],
-                            column_type=row[2],
-                            column_length=str(row[3]) if row[3] is not None else '',
-                            column_default=str(row[4]) if row[4] is not None else '',
-                            sort=row[5],
-                            is_pk=row[6],
-                            is_increment=row[7],
-                            is_nullable=row[8],
-                            is_unique=row[9],
-                        )
-                    )
+            for column_info in columns_info:
+                columns_list.append(GenTableColumnOutSchema(**column_info))
+
             return columns_list
         except Exception as e:
             log.error(f"获取表{table_name}的字段列表时出错: {str(e)}")

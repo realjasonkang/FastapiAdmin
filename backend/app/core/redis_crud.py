@@ -100,6 +100,74 @@ class RedisCURD:
         except Exception as e:
             log.error(f"设置缓存失败: {str(e)}")
             return False
+            
+    async def lock(self, key: str, expire: int, value: str | None = None) -> tuple[bool, str]:
+        """获取分布式锁
+        
+        参数:
+        - key (str): 锁键名
+        - expire (int): 锁过期时间,单位为秒
+        - value (str, optional): 锁值,默认值为None（自动生成UUID）。
+            
+        返回:
+        - tuple[bool, str]: (获取锁是否成功, 锁值)
+        """
+        try:
+            import uuid
+            # 如果没有提供value，生成唯一的UUID
+            lock_value = value if value else str(uuid.uuid4())
+            # 使用setnx命令实现原子性锁获取
+            result = await self.redis.set(
+                name=key,
+                value=lock_value,
+                ex=expire,
+                nx=True  # 只有当键不存在时才设置
+            )
+            return (result is not None, lock_value)
+        except Exception as e:
+            log.error(f"获取分布式锁失败: {str(e)}")
+            return (False, "")
+            
+    async def unlock(self, key: str, value: str) -> bool:
+        """释放分布式锁（安全版本，验证锁值）
+        
+        参数:
+        - key (str): 锁键名
+        - value (str): 锁值，用于验证锁的持有者
+            
+        返回:
+        - bool: 如果释放锁成功则返回True,否则返回False
+        """
+        try:
+            # 使用Lua脚本确保原子性验证和删除
+            script = """
+            if redis.call('get', KEYS[1]) == ARGV[1] then
+                return redis.call('del', KEYS[1])
+            else
+                return 0
+            end
+            """
+            result = await self.redis.eval(script, 1, key, value)  # pyright: ignore[reportGeneralTypeIssues]
+            return result == 1
+        except Exception as e:
+            log.error(f"释放分布式锁失败: {str(e)}")
+            return False
+    
+    async def unlock_simple(self, key: str) -> bool:
+        """释放分布式锁（简单版本，不验证锁值）
+        
+        参数:
+        - key (str): 锁键名
+            
+        返回:
+        - bool: 如果释放锁成功则返回True,否则返回False
+        """
+        try:
+            await self.redis.delete(key)
+            return True
+        except Exception as e:
+            log.error(f"释放分布式锁失败: {str(e)}")
+            return False
 
     async def delete(self, *keys: str) -> bool:
         """删除缓存
@@ -164,6 +232,32 @@ class RedisCURD:
         except Exception as e:
             log.error(f"获取缓存过期时间失败: {str(e)}")
             return -1
+    
+    async def renew_lock(self, key: str, expire: int, value: str) -> bool:
+        """续约分布式锁
+        
+        参数:
+        - key (str): 锁键名
+        - expire (int): 新的过期时间,单位为秒
+        - value (str): 锁值，用于验证锁的持有者
+            
+        返回:
+        - bool: 如果续约锁成功则返回True,否则返回False
+        """
+        try:
+            # 使用Lua脚本确保原子性验证和续约
+            script = """
+            if redis.call('get', KEYS[1]) == ARGV[1] then
+                return redis.call('expire', KEYS[1], ARGV[2])
+            else
+                return 0
+            end
+            """
+            result = await self.redis.eval(script, 1, key, value, str(expire))  # pyright: ignore[reportGeneralTypeIssues]
+            return result == 1
+        except Exception as e:
+            log.error(f"续约分布式锁失败: {str(e)}")
+            return False
 
     async def expire(self, key: str, expire: int) -> bool:
         """设置缓存过期时间

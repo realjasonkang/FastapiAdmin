@@ -15,14 +15,42 @@ class AIClient:
 
     def __init__(self):
         # 使用LangChain的ChatOpenAI类
-        self.client = ChatOpenAI(
-            api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL,
+        self.model = ChatOpenAI(
+            api_key=lambda: settings.OPENAI_API_KEY,
             model=settings.OPENAI_MODEL,
+            base_url=settings.OPENAI_BASE_URL,
             temperature=0.7,
             streaming=True
         )
 
+    async def process(self, query: str)  -> AsyncGenerator[str, Any]:
+        """
+        处理查询并返回流式响应
+
+        参数:
+        - query (str): 用户查询。
+
+        返回:
+        - AsyncGenerator[str, Any]: 流式响应内容。
+        """
+        system_prompt = """你是一个有用的AI助手，可以帮助用户回答问题和提供帮助。请用中文回答用户的问题。"""
+
+        try:
+            # 使用LangChain的异步流式生成
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=query)
+            ]
+            
+            # 使用LangChain的流式响应
+            async for chunk in self.model.astream(messages):
+                yield chunk.text
+
+        except Exception as e:
+            # 记录详细错误，返回友好提示
+            log.error(f"AI处理查询失败: {str(e)}")
+            yield self._friendly_error_message(e)
+    
     def _friendly_error_message(self, e: Exception) -> str:
         """将 OpenAI 或网络异常转换为友好的中文提示。"""
         # 尝试获取状态码与错误体
@@ -66,38 +94,3 @@ class AIClient:
 
         # 默认兜底
         return f"处理您的请求时出现错误：{msg}"
-
-    async def process(self, query: str)  -> AsyncGenerator[str, Any]:
-        """
-        处理查询并返回流式响应
-
-        参数:
-        - query (str): 用户查询。
-
-        返回:
-        - AsyncGenerator[str, Any]: 流式响应内容。
-        """
-        system_prompt = """你是一个有用的AI助手，可以帮助用户回答问题和提供帮助。请用中文回答用户的问题。"""
-
-        try:
-            # 使用LangChain的异步流式生成
-            messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=query)
-            ]
-            
-            # 使用LangChain的流式响应
-            async for chunk in self.client.astream(messages):
-                if chunk.content:
-                    # 确保只返回字符串类型
-                    if isinstance(chunk.content, str):
-                        yield chunk.content
-                    elif isinstance(chunk.content, (list, dict)):
-                        # 处理列表或字典类型的内容
-                        import json
-                        yield json.dumps(chunk.content)
-                    
-        except Exception as e:
-            # 记录详细错误，返回友好提示
-            log.error(f"AI处理查询失败: {str(e)}")
-            yield self._friendly_error_message(e)

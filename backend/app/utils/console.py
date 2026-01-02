@@ -11,15 +11,13 @@ from app.config.setting import settings
 
 console = get_console()
 
+def console_run(host: str, port: int, reload: bool, *, 
+        redis_ready: Optional[bool] = None, 
+        scheduler_jobs: Optional[int] = None, 
+        scheduler_status: Optional[str] = None
+    ) -> None:
+    """显示启动信息面板"""
 
-def create_service_panel(
-    host: str, port: int, reload: bool, *, 
-    redis_ready: Optional[bool] = None, 
-    scheduler_jobs: Optional[int] = None, 
-    scheduler_status: Optional[str] = None,
-) -> Panel:
-    """创建简洁的服务启动信息面板"""
-    
     url = f'http://{host}:{port}'
     base_url = f'{url}{settings.ROOT_PATH}'
     docs_url = base_url + settings.DOCS_URL
@@ -48,34 +46,16 @@ def create_service_panel(
         docs_info,
     )
 
-    return Panel(
+    result = Panel(
         renderable=final_content,
         title="[bold purple]🚀 服务启动完成[/]",
         border_style="green",
         padding=(1, 2)
     )
-
-
-def run(host: str, port: int, reload: bool, *, 
-        redis_ready: Optional[bool] = None, 
-        scheduler_jobs: Optional[int] = None, 
-        scheduler_status: Optional[str] = None
-    ) -> None:
-    """显示启动信息面板"""
     
-    # 创建并显示启动面板
-    service_panel = create_service_panel(
-        host=host,
-        port=port,
-        reload=reload,
-        redis_ready=redis_ready,
-        scheduler_jobs=scheduler_jobs,
-        scheduler_status=scheduler_status,
-    )
-    
-    console.print(service_panel)
+    console.print(result)
 
-def display_shutdown_info():
+def console_close():
     """显示关闭信息"""
     shutdown_content = Text()
     shutdown_content.append("🛑 ", style="bold red")
@@ -83,11 +63,11 @@ def display_shutdown_info():
     shutdown_content.append(f"\n⏰ {datetime.now().strftime('%H:%M:%S')}")
     shutdown_content.append("\n👋 感谢使用！", style="dim")
     
-    shutdown_panel = Panel(
+    result = Panel(
         shutdown_content,
         title="[bold red]服务关闭[/]",
         border_style="red",
         padding=(1, 2)
     )
     
-    console.print(shutdown_panel)
+    console.print(result)

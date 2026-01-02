@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-from datetime import datetime
+from datetime import datetime, date, time
 from typing import Annotated
 from pydantic import AfterValidator, PlainSerializer, WithJsonSchema
 
@@ -14,6 +14,20 @@ DateTimeStr = Annotated[
     datetime,
     AfterValidator(lambda x: datetime_validator(x)),
     PlainSerializer(lambda x: x.strftime('%Y-%m-%d %H:%M:%S') if isinstance(x, datetime) else str(x), return_type=str),
+    WithJsonSchema({'type': 'string'}, mode='serialization')
+]
+
+# 自定义日期字符串类型
+DateStr = Annotated[
+    date,
+    PlainSerializer(lambda x: x.strftime('%Y-%m-%d') if isinstance(x, date) else str(x), return_type=str),
+    WithJsonSchema({'type': 'string'}, mode='serialization')
+]
+
+# 自定义时间字符串类型
+TimeStr = Annotated[
+    time,
+    PlainSerializer(lambda x: x.strftime('%H:%M:%S') if isinstance(x, time) else str(x), return_type=str),
     WithJsonSchema({'type': 'string'}, mode='serialization')
 ]
 

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import asyncio
 import json
 import importlib
 from datetime import datetime
@@ -17,12 +16,14 @@ from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from concurrent.futures import ThreadPoolExecutor
+from redis.asyncio.client import Redis
 
+from app.common.enums import RedisInitKeyConfig
 from app.config.setting import settings
 from app.core.database import engine, db_session, async_db_session
 from app.core.exceptions import CustomException
 from app.core.logger import log
+from app.core.redis_crud import RedisCURD
 from app.utils.cron_util import CronUtil
 
 from app.api.v1.module_application.job.model import JobModel
@@ -61,6 +62,8 @@ class SchedulerUtil:
     """
     定时任务相关方法
     """
+    # 类变量，存储应用的Redis连接
+    redis_instance = None
     @classmethod
     def scheduler_event_listener(cls, event: JobEvent | JobExecutionEvent) -> None:
         """
@@ -82,42 +85,27 @@ class SchedulerUtil:
         # 获取事件类型和任务ID
         event_type = event.__class__.__name__
         # 初始化任务状态
-        status = True
+        status = "0"
         exception_info = ''
         if isinstance(event, JobExecutionEvent) and event.exception:
             exception_info = str(event.exception)
-            status = False
+            status = "1"
         if hasattr(event, 'job_id'):
             job_id = event.job_id
             query_job = cls.get_job(job_id=job_id)
             if query_job:
-                query_job_info = query_job.__getstate__()
-                # 获取任务名称
-                job_name = query_job_info.get('name')
-                # 获取任务组名
-                job_group = query_job._jobstore_alias
-                # # 获取任务执行器
-                job_executor = query_job_info.get('executor')
-                # 获取调用目标字符串
-                invoke_target = query_job_info.get('func')
-                # 获取调用函数位置参数
-                job_args = ','.join(map(str, query_job_info.get('args', [])))
-                # 获取调用函数关键字参数
-                job_kwargs = json.dumps(query_job_info.get('kwargs'))
-                # 获取任务触发器
-                job_trigger = str(query_job_info.get('trigger'))
-                # 构造日志消息
-                job_message = f"事件类型: {event_type}, 任务ID: {job_id}, 任务名称: {job_name}, 状态: {status}, 任务组: {job_group}, 错误详情: {exception_info}, 执行于{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-                
-                # 创建ORM对象
+                job_message = (f"事件类型: {event_type}, 任务ID: {job_id}, "
+                               f"状态: {status}, 错误详情: {exception_info}, "
+                               f"执行于{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
                 job_log = JobLogModel(
-                    job_name=job_name,
-                    job_group=job_group,
-                    job_executor=job_executor,
-                    invoke_target=invoke_target,
-                    job_args=job_args,
-                    job_kwargs=job_kwargs,
-                    job_trigger=job_trigger,
+                    job_name=query_job.name,
+                    job_group=query_job._jobstore_alias,
+                    job_executor=query_job.executor,
+                    invoke_target=query_job.func.__module__ + '.' + query_job.func.__qualname__,
+                    job_args=str(query_job.args),
+                    job_kwargs=str(query_job.kwargs),
+                    job_trigger=query_job.trigger,
                     job_message=job_message,
                     status=status,
                     exception_info=exception_info,
@@ -125,35 +113,16 @@ class SchedulerUtil:
                     updated_time=datetime.now(),
                     job_id=job_id,
                 )
-                
-                # 使用线程池执行操作以避免阻塞调度器和数据库锁定问题
-                executor = ThreadPoolExecutor(max_workers=1)
-                executor.submit(cls._save_job_log_async_wrapper, job_log)
-                executor.shutdown(wait=False)
+
+                with db_session.begin() as session:
+                    try:
+                        session.add(job_log)
+                        session.commit()
+                    except Exception as e:
+                        session.rollback()
 
     @classmethod
-    def _save_job_log_async_wrapper(cls, job_log) -> None:
-        """
-        异步保存任务日志的包装器函数，在独立线程中运行
-        
-        参数:
-        - job_log (JobLogModel): 任务日志对象
-        
-        返回:
-        - None
-        """
-        with db_session.begin() as session:
-            try:
-                session.add(job_log)
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                log.error(f"保存任务日志失败: {str(e)}")
-            finally:
-                session.close()
-
-    @classmethod
-    async def init_system_scheduler(cls) -> None:
+    async def init_system_scheduler(cls, redis: Redis) -> None:
         """
         应用启动时初始化定时任务。
     
@@ -164,33 +133,21 @@ class SchedulerUtil:
         from app.api.v1.module_application.job.crud import JobCRUD
         from app.api.v1.module_system.auth.schema import AuthSchema
         log.info('🔎 开始启动定时任务...')
-        
+        # 保存Redis连接到类变量
+        cls.redis_instance = redis
         # 启动调度器
         scheduler.start()
-        
         # 添加事件监听器
         scheduler.add_listener(cls.scheduler_event_listener, EVENT_ALL)
-        
         async with async_db_session() as session:
             async with session.begin():
                 auth = AuthSchema(db=session)
                 job_list = await JobCRUD(auth).get_obj_list_crud()
-                
-                # 只在一个实例上初始化任务
                 # 使用Redis锁确保只有一个实例执行任务初始化
-                import redis.asyncio as redis
-                redis_client = redis.Redis(
-                    host=settings.REDIS_HOST,
-                    port=int(settings.REDIS_PORT),
-                    username=settings.REDIS_USER,
-                    password=settings.REDIS_PASSWORD,
-                    db=int(settings.REDIS_DB_NAME),
-                )
-                
+                redis_client = RedisCURD(redis)
+                lock_key = f'{RedisInitKeyConfig.APSCHEDULER_LOCK_KEY.key}:job'
                 # 尝试获取锁，过期时间10秒
-                lock_key = "scheduler_init_lock"
-                lock_acquired = await redis_client.set(lock_key, "1", ex=10, nx=True)
-                
+                lock_acquired, lock_value = await redis_client.lock(lock_key, 10)
                 if lock_acquired:
                     try:
                         for item in job_list:
@@ -198,18 +155,16 @@ class SchedulerUtil:
                             existing_job = cls.get_job(job_id=item.id)
                             if existing_job:
                                 cls.remove_job(job_id=item.id)  # 删除旧任务
-                            
                             # 添加新任务
                             cls.add_job(item)
-                            
                             # 根据数据库中保存的状态来设置任务状态
-                            if hasattr(item, 'status') and item.status == "1":
+                            if item.status == "1":
                                 # 如果任务状态为暂停，则立即暂停刚添加的任务
                                 cls.pause_job(job_id=item.id)
                         log.info('✅️ 系统初始定时任务加载成功')
                     finally:
                         # 释放锁
-                        await redis_client.delete(lock_key)
+                        await redis_client.unlock(lock_key, lock_value)
                 else:
                     # 等待其他实例完成初始化
                     import asyncio
@@ -259,34 +214,45 @@ class SchedulerUtil:
     @classmethod
     async def _task_wrapper(cls, func, job_id, *args, **kwargs):
         """任务执行包装器，添加分布式锁防止并发执行"""
-        from redis.asyncio import Redis
-        from app.config.setting import settings
-        from app.core.logger import log
+        import asyncio
+        # 使用类变量中的Redis连接
+        if not cls.redis_instance:
+            log.error(f"任务 {job_id} 执行失败：Redis连接未初始化")
+            return None
+        
+        redis_client = RedisCURD(redis=cls.redis_instance)
+        lock_key = f"{RedisInitKeyConfig.APSCHEDULER_LOCK_KEY.key}:{job_id}"
+        lock_acquired = False
+        lock_value = ""
+        renewal_task = None
 
-        # 使用项目配置创建Redis连接池
-        redis_client = Redis(
-            host=settings.REDIS_HOST,
-            port=int(settings.REDIS_PORT),
-            username=settings.REDIS_USER,
-            password=settings.REDIS_PASSWORD,
-            db=int(settings.REDIS_DB_NAME),
-            encoding='utf-8',
-            decode_responses=True,
-            health_check_interval=20,
-            max_connections=settings.POOL_SIZE,
-            socket_timeout=settings.POOL_TIMEOUT
-        )
-
-        lock_key = f"job_lock:{job_id}"
-        lock_expire = 30  # 锁过期时间，根据任务实际执行时间调整
-        lock_acquired = None
+        # 定义锁续约函数
+        async def renew_lock():
+            """定期续约锁的过期时间"""
+            try:
+                while True:
+                    # 等待锁过期时间的2/3后进行续约
+                    await asyncio.sleep(20)  # 30秒的2/3
+                    # 使用redis_client.renew_lock续约锁，验证锁持有者
+                    success = await redis_client.renew_lock(lock_key, 30, lock_value)
+                    if success:
+                        log.info(f"任务 {job_id} 锁续约成功")
+                    else:
+                        log.warning(f"任务 {job_id} 锁续约失败：锁可能已被其他实例获取")
+                        break
+            except asyncio.CancelledError:
+                log.info(f"任务 {job_id} 锁续约任务已取消")
+            except Exception as e:
+                log.error(f"任务 {job_id} 锁续约失败: {str(e)}")
 
         try:
-            # 获取分布式锁，使用nx=True确保原子性操作
-            lock_acquired = await redis_client.set(lock_key, "1", ex=lock_expire, nx=True)
-            
+            # 获取分布式锁，使用原子性的lock方法
+            lock_acquired, lock_value = await redis_client.lock(lock_key, 30)
             if lock_acquired:
                 log.info(f"任务 {job_id} 获取执行锁成功")
+                # 启动锁续约任务
+                renewal_task = asyncio.create_task(renew_lock())
+                
                 # 执行任务
                 if iscoroutinefunction(func):
                     return await func(*args, **kwargs)
@@ -295,7 +261,8 @@ class SchedulerUtil:
                     log.info(f"任务 {job_id} 开始执行同步函数: {func.__name__}, 参数: {args}-{kwargs}")
                     try:
                         loop = asyncio.get_running_loop()
-                        result = await loop.run_in_executor(None, func, *args, **kwargs)
+                        # 使用lambda包装函数调用，以支持关键字参数
+                        result = await loop.run_in_executor(None, lambda: func(*args, **kwargs))
                         log.info(f"任务 {job_id} 同步函数执行完成，结果: {result}")
                         return result
                     except Exception as e:
@@ -306,13 +273,19 @@ class SchedulerUtil:
                 log.info(f"任务 {job_id} 获取执行锁失败，跳过本次执行")
                 return None
         finally:
+            # 取消锁续约任务
+            if renewal_task and not renewal_task.done():
+                renewal_task.cancel()
+                try:
+                    await renewal_task
+                except asyncio.CancelledError:
+                    pass
+            
             # 释放锁
             if lock_acquired:
-                await redis_client.delete(lock_key)
+                await redis_client.unlock(lock_key, lock_value)
                 log.info(f"任务 {job_id} 释放执行锁")
-            # 关闭Redis连接
-            await redis_client.close()
-
+    
     @classmethod
     def add_job(cls, job_info: JobModel) -> Job:
         """

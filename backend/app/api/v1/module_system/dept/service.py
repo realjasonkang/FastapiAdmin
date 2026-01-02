@@ -127,22 +127,30 @@ class DeptService:
         - None
         
         异常:
-        - CustomException: 当删除对象为空或部门不存在时抛出。
+        - CustomException: 当删除对象为空时抛出。
         """
         if len(ids) < 1:
             raise CustomException(msg='删除失败，删除对象不能为空')
+        
+        # 获取所有部门列表，用于构建树形关系
+        all_depts = await DeptCRUD(auth).get_list_crud()
+        
+        # 构建子部门ID映射
+        child_id_map = get_child_id_map(model_list=all_depts)
+        
+        # 收集所有需要删除的部门ID，包括直接指定的ID和它们的所有子部门ID
+        delete_ids_set = set()
+        
         for id in ids:
-            dept = await DeptCRUD(auth).get_by_id_crud(id=id)
-            if not dept:
-                raise CustomException(msg='删除失败，该部门不存在')
-        # 校验是否存在子级部门，存在则禁止删除
-        dept_list = await DeptCRUD(auth).get_list_crud()
-        id_map = get_child_id_map(model_list=dept_list)
-        for id in ids:
-            descendants = get_child_recursion(id=id, id_map=id_map)
-            if len(descendants) > 1:
-                raise CustomException(msg='删除失败，存在子级部门，请先删除子级部门')
-        await DeptCRUD(auth).delete(ids=ids)
+            # 递归获取该ID的所有子部门ID
+            all_descendants = get_child_recursion(id=id, id_map=child_id_map)
+            delete_ids_set.update(all_descendants)
+        
+        # 将集合转换为列表
+        delete_ids = list(delete_ids_set)
+        
+        # 执行批量删除操作
+        await DeptCRUD(auth).delete(ids=delete_ids)
 
     @classmethod
     async def batch_set_available_service(cls, auth: AuthSchema, data: BatchSetAvailable) -> None:

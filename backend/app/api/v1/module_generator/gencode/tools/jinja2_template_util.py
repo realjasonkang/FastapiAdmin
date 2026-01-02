@@ -22,8 +22,6 @@ class Jinja2TemplateUtil:
     # 项目路径
     FRONTEND_PROJECT_PATH = 'frontend'
     BACKEND_PROJECT_PATH = 'backend'
-    # 默认上级菜单，系统工具
-    DEFAULT_PARENT_MENU_ID = 7
     
     # 环境对象
     _env = None
@@ -116,7 +114,7 @@ class Jinja2TemplateUtil:
             'db_type': settings.DATABASE_TYPE,
             'column_not_add_show': GenConstant.COLUMNNAME_NOT_ADD_SHOW,
             'column_not_edit_show': GenConstant.COLUMNNAME_NOT_EDIT_SHOW,
-            'parent_menu_id': int(gen_table.parent_menu_id) if gen_table.parent_menu_id is not None else int(cls.DEFAULT_PARENT_MENU_ID),
+            'parent_menu_id': int(gen_table.parent_menu_id) if gen_table.parent_menu_id else None,
         }
 
         return context
@@ -138,7 +136,6 @@ class Jinja2TemplateUtil:
             'python/schema.py.j2',
             'python/model.py.j2',
             'python/__init__.py.j2',
-            'sql/sql.sql.j2',
             'ts/api.ts.j2',
             'vue/index.vue.j2',
         ]
@@ -175,7 +172,6 @@ class Jinja2TemplateUtil:
             'schema.py.j2': f'{cls.BACKEND_PROJECT_PATH}/app/api/v1/{module_name}/{business_name}/schema.py',
             'model.py.j2': f'{cls.BACKEND_PROJECT_PATH}/app/api/v1/{module_name}/{business_name}/model.py',
             '__init__.py.j2': f'{cls.BACKEND_PROJECT_PATH}/app/api/v1/{module_name}/{business_name}/__init__.py',
-            'sql.sql.j2': f'{cls.BACKEND_PROJECT_PATH}/sql/menu/{module_name}/{business_name}.sql',
             'api.ts.j2': f'{cls.FRONTEND_PROJECT_PATH}/src/api/{module_name}/{business_name}.ts',
             'index.vue.j2': f'{cls.FRONTEND_PROJECT_PATH}/src/views/{module_name}/{business_name}/index.vue'
         }
@@ -185,9 +181,8 @@ class Jinja2TemplateUtil:
             if key in template:
                 return path
         
-        # 默认处理
-        template_name = template.split('/')[-1].replace('.j2', '')
-        return f'{cls.BACKEND_PROJECT_PATH}/generated/{template_name}'
+        # 遍历完所有映射都没找到匹配项，才抛出异常
+        raise ValueError(f"未找到模板 '{template}' 的路径映射")
 
     @classmethod
     def get_package_prefix(cls, package_name: str) -> str:

@@ -35,23 +35,24 @@ class Settings(BaseSettings):
     # ******************* API文档配置 ****************** #
     # ================================================= #
     DEBUG: bool = True            # 调试模式
-    TITLE: str = "🎉 FastapiAdmin 🎉 -dev"  # 文档标题
+    TITLE: str = "🎉 FastapiAdmin 🎉 "  # 文档标题
     VERSION: str = '0.1.0'        # 版本号
     DESCRIPTION: str = "该项目是一个基于python的web服务框架，基于fastapi和sqlalchemy实现。"  # 文档描述
     SUMMARY: str = "接口汇总"      # 文档概述
-    DOCS_URL: str = "/docs"      # Swagger UI路径
-    REDOC_URL: str = "/redoc"    # ReDoc路径
-    ROOT_PATH: str = "/api/v1"   # API路由前缀
+    DOCS_URL: str = "/docs"       # Swagger UI路径
+    REDOC_URL: str = "/redoc"     # ReDoc路径
+    ROOT_PATH: str = "/api/v1"    # API路由前缀
+
+    # ================================================= #
+    # ******************** 日志配置 ******************** #
+    # ================================================= #
+    LOGGER_LEVEL: str = 'DEBUG'        # 日志级别
 
     # ================================================= #
     # ******************** 跨域配置 ******************** #
     # ================================================= #
     CORS_ORIGIN_ENABLE: bool = True    # 是否启用跨域
-    # ALLOW_ORIGINS: List[str] = ["*"]   # 允许的域名列表
-    ALLOW_ORIGINS: List[str] = [
-        'http://localhost:8001',
-        'http://localhost:5180',
-    ]   # 允许的域名列表
+    ALLOW_ORIGINS: List[str] = ["*"]   # 允许的域名列表
     ALLOW_METHODS: List[str] = ["*"]   # 允许的HTTP方法
     ALLOW_HEADERS: List[str] = ["*"]   # 允许的请求头
     ALLOW_CREDENTIALS: bool = True     # 是否允许携带cookie
@@ -65,10 +66,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 60 * 24 * 1                     # access_token过期时间(秒)1 天
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 60 * 24 * 7                    # refresh_token过期时间(秒)7 天
     TOKEN_TYPE: str = "bearer"                                              # token类型
-    TOKEN_REQUEST_PATH_EXCLUDE: list[str] = [                               # JWT / RBAC 路由白名单
-        'api/v1/auth/login',
-    ]
-
+    TOKEN_REQUEST_PATH_EXCLUDE: list[str] = ['api/v1/auth/login']           # JWT / RBAC 路由白名单
+    
     # ================================================= #
     # ******************** 数据库配置 ******************* #
     # ================================================= #
@@ -86,11 +85,8 @@ class Settings(BaseSettings):
     AUTOFETCH: bool = False                                # 是否自动刷新
     EXPIRE_ON_COMMIT: bool = False                         # 是否在提交时过期
 
-    # 数据库类型
-    DATABASE_TYPE: Literal['mysql', 'postgres', 'sqlite', 'dm'] = 'mysql'
-    
-
     # MySQL/PostgreSQL数据库连接
+    DATABASE_TYPE: Literal['mysql', 'postgres', 'sqlite', 'dm'] = 'mysql'
     DATABASE_HOST: str = 'localhost'
     DATABASE_PORT: int = 3306
     DATABASE_USER: str = 'root'

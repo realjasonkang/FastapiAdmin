@@ -2,7 +2,6 @@
 
 import io
 import os
-from pathlib import Path
 import zipfile
 from typing import Any
 from sqlglot.expressions import Add, Alter, Create, Delete, Drop, Expression, Insert, Table, TruncateTable, Update
@@ -12,7 +11,6 @@ from app.config.path_conf import BASE_DIR
 from app.config.setting import settings
 from app.core.logger import log
 from app.core.exceptions import CustomException
-
 from app.api.v1.module_system.auth.schema import AuthSchema
 from .tools.jinja2_template_util import Jinja2TemplateUtil
 from .tools.gen_util import GenUtils
@@ -37,8 +35,14 @@ class GenTableService:
     @classmethod
     @handle_service_exception
     async def get_gen_table_detail_service(cls, auth: AuthSchema, table_id: int) -> dict:
-        """获取业务表详细信息（含字段与其他表列表）。
-        - 备注：优先解析`options`为`GenTableOptionSchema`，设置`parent_menu_id`等选项；保证`columns`与`tables`结构完整。
+        """获取详细信息。
+
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_id (int): 业务表ID。
+
+        返回:
+        - dict: 包含业务表详细信息的字典。
         """
         gen_table = await cls.get_gen_table_by_id_service(auth, table_id)
         return GenTableOutSchema.model_validate(gen_table).model_dump()
@@ -62,8 +66,14 @@ class GenTableService:
     @classmethod
     @handle_service_exception
     async def get_gen_db_table_list_service(cls, auth: AuthSchema, search: GenTableQueryParam) -> list[Any]:
-        """获取数据库表列表（跨方言）。
-        - 备注：返回已转换为字典的结构，适用于前端直接展示；排序参数保留扩展位但当前未使用。
+        """获取数据库表列表。
+
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - search (GenTableQueryParam): 查询参数模型。
+
+        返回:
+        - list[Any]: 包含数据库表列表信息的任意类型列表。
         """
         gen_db_table_list_result = await GenTableCRUD(auth=auth).get_db_table_list(search)
         return gen_db_table_list_result
@@ -72,28 +82,34 @@ class GenTableService:
     @handle_service_exception
     async def get_gen_db_table_list_by_name_service(cls, auth: AuthSchema, table_names: list[str]) -> list[GenTableOutSchema]:
         """根据表名称组获取数据库表信息。
-        - 校验：如有不存在的表名，抛出明确异常；返回统一的`GenTableOutSchema`列表。
+
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_names (list[str]): 业务表名称列表。
+
+        返回:
+        - list[GenTableOutSchema]: 包含业务表详细信息的模型列表。
         """
-        # 验证输入参数
-        if not table_names:
-            raise CustomException(msg="表名列表不能为空")
-            
         gen_db_table_list_result = await GenTableCRUD(auth).get_db_table_list_by_names(table_names)
 
         # 修复：将GenDBTableSchema对象转换为字典后再传递给GenTableOutSchema
         result = []
         for gen_table in gen_db_table_list_result:
-            # 确保table_name不为None
-            if gen_table.table_name is not None:
-                result.append(GenTableOutSchema(**gen_table.model_dump()))
+            result.append(GenTableOutSchema(**gen_table.model_dump()))
         
         return result
 
     @classmethod
     @handle_service_exception
-    async def import_gen_table_service(cls, auth: AuthSchema, gen_table_list: list[GenTableOutSchema])  -> bool | None:
-        """导入表结构到生成器（持久化并初始化列）。
-        - 备注：避免重复导入；为每列调用`GenUtils.init_column_field`填充默认属性，保留语义一致性。
+    async def import_gen_table_service(cls, auth: AuthSchema, gen_table_list: list[GenTableOutSchema]) -> bool:
+        """导入表结构到生成器。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - gen_table_list (list[GenTableOutSchema]): 包含业务表详细信息的模型列表。
+
+        返回:
+        - bool: 成功时返回True，失败时抛出异常。
         """
         # 检查是否有表需要导入
         if not gen_table_list:
@@ -138,13 +154,17 @@ class GenTableService:
     @handle_service_exception
     async def create_table_service(cls, auth: AuthSchema, sql: str) -> bool | None:
         """创建表结构并导入至代码生成模块。
-        - 校验：使用`sqlglot`确保仅包含`CREATE TABLE`语句；失败抛出明确异常。
-        - 唯一性检查：在创建前检查该表是否已存在于数据库中。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - sql (str): 包含`CREATE TABLE`语句的SQL字符串。
+
+        返回:
+        - bool | None: 成功时返回True，失败时抛出异常。
         """
         # 验证SQL非空
         if not sql or not sql.strip():
             raise CustomException(msg='SQL语句不能为空')
-            
         try:
             # 解析SQL语句
             sql_statements = sqlglot_parse(sql, dialect=settings.DATABASE_TYPE)
@@ -185,43 +205,6 @@ class GenTableService:
             
         except Exception as e:
             raise CustomException(msg=f'创建表结构失败: {str(e)}')
-    
-    @classmethod
-    @handle_service_exception
-    async def execute_sql_service(cls, auth: AuthSchema, gen_table: GenTableOutSchema) -> bool:
-        """
-        执行菜单 SQL（INSERT / DO 块）并写入 sys_menu。
-        - 仅处理菜单 SQL，不再混杂建表逻辑；
-        - 文件不存在时给出友好提示；
-        - 统一异常信息，日志与业务提示分离。
-        """
-        sql_path = f'{BASE_DIR}/sql/menu/{gen_table.module_name}/{gen_table.business_name}.sql'
-
-        # 文件存在性前置检查，避免多余解析开销
-        if not os.path.isfile(sql_path):
-            raise CustomException(msg=f'菜单 SQL 文件不存在: {sql_path}')
-
-        sql = Path(sql_path).read_text(encoding='utf-8').strip()
-        if not sql:
-            raise CustomException(msg='菜单 SQL 文件内容为空')
-
-        # 仅做语法校验，不限制关键字；真正的语义安全由数据库权限控制
-        try:
-            statements = sqlglot_parse(sql, dialect=settings.DATABASE_TYPE)
-            if not statements:
-                raise CustomException(msg='菜单 SQL 语法解析失败，请检查文件内容')
-        except Exception as e:
-            log.error(f'菜单 SQL 解析异常: {e}')
-            raise CustomException(msg='菜单 SQL 语法错误，请检查文件内容')
-
-        # 执行 SQL
-        try:
-            await GenTableCRUD(auth).execute_sql(sql)
-            log.info(f'成功执行菜单 SQL: {sql_path}')
-            return True
-        except Exception as e:
-            log.error(f'菜单 SQL 执行失败: {e}')
-            raise CustomException(msg='菜单 SQL 执行失败，请确认语句及数据库状态')
     
     @classmethod
     def __is_valid_create_table(cls, sql_statements: list[Expression | None]) -> bool:
@@ -268,8 +251,15 @@ class GenTableService:
     @classmethod
     @handle_service_exception
     async def update_gen_table_service(cls, auth: AuthSchema, data: GenTableSchema, table_id: int) -> dict[str, Any]:
-        """编辑业务表信息（含选项与字段）。
-        - 备注：将`params`序列化写入`options`以持久化；仅更新存在`id`的列，避免误创建。
+        """编辑业务表信息。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - data (GenTableSchema): 包含业务表详细信息的模型。
+        - table_id (int): 业务表ID。
+
+        返回:
+        - dict[str, Any]: 更新后的业务表信息。
         """
         # 处理params为None的情况
         gen_table_info = await cls.get_gen_table_by_id_service(auth, table_id)
@@ -294,7 +284,15 @@ class GenTableService:
     @classmethod
     @handle_service_exception
     async def delete_gen_table_service(cls, auth: AuthSchema, ids: list[int]) -> None:
-        """删除业务表信息（先删字段，再删表）。"""
+        """删除业务表信息（先删字段，再删表）。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - ids (list[int]): 业务表ID列表。
+
+        返回:
+        - None
+        """
         # 验证ID列表非空
         if not ids:
             raise CustomException(msg="ID列表不能为空")
@@ -311,7 +309,13 @@ class GenTableService:
     @handle_service_exception
     async def get_gen_table_by_id_service(cls, auth: AuthSchema, table_id: int) -> GenTableOutSchema:
         """获取需要生成代码的业务表详细信息。
-        - 备注：去除SQLAlchemy内部状态；将`None`值转为适配前端的默认值；解析`options`补充选项。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_id (int): 业务表ID。
+
+        返回:
+        - GenTableOutSchema: 业务表详细信息模型。
         """
         gen_table = await GenTableCRUD(auth=auth).get_gen_table_by_id(table_id)
         if not gen_table:
@@ -323,7 +327,14 @@ class GenTableService:
     @classmethod
     @handle_service_exception
     async def get_gen_table_all_service(cls, auth: AuthSchema) -> list[GenTableOutSchema]:
-        """获取所有业务表信息（列表）。"""
+        """获取所有业务表信息（列表）。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+
+        返回:
+        - list[GenTableOutSchema]: 业务表详细信息模型列表。
+        """
         gen_table_all = await GenTableCRUD(auth=auth).get_gen_table_all() or []
         result = []
         for gen_table in gen_table_all:
@@ -340,7 +351,13 @@ class GenTableService:
     async def preview_code_service(cls, auth: AuthSchema, table_id: int) -> dict[str, Any]:
         """
         预览代码（根据模板渲染内存结果）。
-        - 备注：构建Jinja2上下文；根据模板类型与前端类型选择模板清单；返回文件名到内容映射。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_id (int): 业务表ID。
+
+        返回:
+        - dict[str, Any]: 文件名到渲染内容的映射。
         """
         gen_table = GenTableOutSchema.model_validate(
             await GenTableCRUD(auth).get_gen_table_by_id(table_id)
@@ -365,14 +382,175 @@ class GenTableService:
     async def generate_code_service(cls, auth: AuthSchema, table_name: str) -> bool:
         """生成代码至指定路径（安全写入+可跳过覆盖）。
         - 安全：限制写入在项目根目录内；越界路径自动回退到项目根目录。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_name (str): 业务表名。
+
+        返回:
+        - bool: 生成是否成功。
         """
         # 验证表名非空
         if not table_name or not table_name.strip():
             raise CustomException(msg='表名不能为空')
-            
         env = Jinja2TemplateUtil.get_env()
         render_info = await cls.__get_gen_render_info(auth, table_name)
-        gen_table_schema = render_info[3]
+        gen_table_schema: GenTableOutSchema = render_info[3]
+        
+        from app.api.v1.module_system.menu.crud import MenuCRUD
+        from app.api.v1.module_system.menu.schema import MenuCreateSchema
+        from app.utils.common_util import CamelCaseUtil
+        # 构建权限前缀
+        permission_prefix = f"{gen_table_schema.module_name}:{gen_table_schema.business_name}"
+        # 创建菜单 CRUD 实例
+        menu_crud = MenuCRUD(auth)
+        if not gen_table_schema.business_name:
+            raise CustomException(msg='业务名称不能为空')
+        if not gen_table_schema.function_name:
+            raise CustomException(msg='功能名称不能为空')
+        # 1. 先检查并创建菜单（目录菜单、功能菜单、按钮权限）
+        # 检查是否需要创建目录菜单
+        if gen_table_schema.parent_menu_id:
+            # 如果传了上级菜单ID（菜单类型=1），则不创建目录菜单，直接使用该ID作为功能菜单的父ID
+            dir_menu_id = gen_table_schema.parent_menu_id
+        else:
+            # 如果没传上级菜单ID，则需要创建新的模块目录菜单（类型=1：目录）
+            existing_dir_menu = await menu_crud.get(name=gen_table_schema.business_name)
+            if existing_dir_menu:
+                dir_menu_id = existing_dir_menu.id
+            else:
+                dir_parent_menu = await menu_crud.create(
+                    MenuCreateSchema(
+                        name=gen_table_schema.business_name,
+                        type=1,
+                        order=9999,
+                        permission=f"{permission_prefix}:query",
+                        icon="menu",
+                        route_name=CamelCaseUtil.snake_to_camel(gen_table_schema.business_name),
+                        route_path=f"/{gen_table_schema.module_name}/{gen_table_schema.business_name}",
+                        component_path=None,
+                        redirect=None,
+                        hidden=False,
+                        keep_alive=True,
+                        always_show=False,
+                        title=gen_table_schema.business_name,
+                        params=None,
+                        affix=False,
+                        parent_id=gen_table_schema.parent_menu_id,  # 这里应该是None，因为上面已经判断过了
+                        status="0",
+                        description=f"{gen_table_schema.business_name}模块目录菜单"
+                    )
+                )
+                dir_menu_id = dir_parent_menu.id
+        
+        # 检查功能菜单是否已存在，如果存在则抛出错误
+        existing_func_menu = await menu_crud.get(name=gen_table_schema.function_name, type=2)
+        if existing_func_menu:
+            raise CustomException(msg=f"功能菜单名称 '{gen_table_schema.function_name}' 已存在，不能重复创建")
+        else:
+            # 创建功能菜单（类型=2：菜单）
+            parent_menu = await menu_crud.create(
+                MenuCreateSchema(
+                    name=gen_table_schema.function_name,
+                    type=2,
+                    order=9999,
+                    permission=f"{permission_prefix}:query",
+                    icon="menu",
+                    route_name=CamelCaseUtil.snake_to_camel(gen_table_schema.function_name),
+                    route_path=f"/{gen_table_schema.module_name}/{gen_table_schema.business_name}/{gen_table_schema.function_name}",
+                    component_path=f"{gen_table_schema.module_name}/{gen_table_schema.business_name}/{gen_table_schema.function_name}/index",
+                    redirect=None,
+                    hidden=False,
+                    keep_alive=True,
+                    always_show=False,
+                    title=gen_table_schema.function_name,
+                    params=None,
+                    affix=False,
+                    parent_id=dir_menu_id,  # 使用目录菜单ID或用户指定的parent_menu_id作为父ID
+                    status="0",
+                    description=f"{gen_table_schema.function_name}功能菜单"
+                )
+            )
+        # 创建按钮权限（类型=3：按钮/权限）
+        buttons = [
+            {
+                "name": f"{gen_table_schema.function_name}查询",
+                "permission": f"{permission_prefix}:query",
+                "order": 1
+            },
+            {
+                "name": f"{gen_table_schema.function_name}详情",
+                "permission": f"{permission_prefix}:detail",
+                "order": 2
+            },
+            {
+                "name": f"{gen_table_schema.function_name}新增",
+                "permission": f"{permission_prefix}:create",
+                "order": 3
+            },
+            {
+                "name": f"{gen_table_schema.function_name}修改",
+                "permission": f"{permission_prefix}:update",
+                "order": 4
+            },
+            {
+                "name": f"{gen_table_schema.function_name}删除",
+                "permission": f"{permission_prefix}:delete",
+                "order": 5
+            },
+            {
+                "name": f"{gen_table_schema.function_name}批量状态修改",
+                "permission": f"{permission_prefix}:patch",
+                "order": 6
+            },
+            {
+                "name": f"{gen_table_schema.function_name}导出",
+                "permission": f"{permission_prefix}:export",
+                "order": 7
+            },
+            {
+                "name": f"{gen_table_schema.function_name}导入",
+                "permission": f"{permission_prefix}:import",
+                "order": 8
+            },
+            {
+                "name": f"{gen_table_schema.function_name}下载导入模板",
+                "permission": f"{permission_prefix}:download",
+                "order": 9
+            }
+        ]
+        for button in buttons:
+            # 检查按钮权限是否已存在
+            existing_button = await menu_crud.get(permission=button["permission"])
+            if not existing_button:
+                await menu_crud.create(
+                    MenuCreateSchema(
+                        name=button["name"],
+                        type=3,
+                        order=button["order"],
+                        permission=button["permission"],
+                        icon=None,
+                        route_name=None,
+                        route_path=None,
+                        component_path=None,
+                        redirect=None,
+                        hidden=False,
+                        keep_alive=True,
+                        always_show=False,
+                        title=button["name"],
+                        params=None,
+                        affix=False,
+                        parent_id=parent_menu.id,
+                        status="0",
+                        description=f"{gen_table_schema.function_name}功能按钮"
+                    )
+                )
+                log.info(f"成功创建按钮权限: {button['name']}")
+            else:
+                log.info(f"按钮权限 {button['name']} 已存在（权限标识：{button['permission']}），跳过创建")
+        log.info(f"成功创建{gen_table_schema.function_name}菜单及按钮权限")
+        
+        # 2. 菜单创建成功后，再生成页面代码
         for template in render_info[0]:
             try:
                 render_content = await env.get_template(template).render_async(**render_info[2])
@@ -388,7 +566,6 @@ class GenTableService:
             except Exception as e:
                 raise CustomException(msg=f'渲染模板失败，表名：{gen_table_schema.table_name}，详细错误信息：{str(e)}')
         
-        await cls.execute_sql_service(auth, gen_table_schema)
         return True
 
     @classmethod
@@ -397,17 +574,22 @@ class GenTableService:
         """
         批量生成代码并打包为ZIP。
         - 备注：内存生成并压缩，兼容多模板类型；供下载使用。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_names (list[str]): 业务表名列表。
+
+        返回:
+        - bytes: 包含所有生成代码的ZIP文件内容。
         """
         # 验证表名列表非空
         if not table_names:
             raise CustomException(msg="表名列表不能为空")
-            
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
             for table_name in table_names:
                 if not table_name.strip():
                     continue
-                    
                 try:
                     env = Jinja2TemplateUtil.get_env()
                     render_info = await cls.__get_gen_render_info(auth, table_name)
@@ -418,7 +600,6 @@ class GenTableService:
                     log.error(f"批量生成代码时处理表 {table_name} 出错: {str(e)}")
                     # 继续处理其他表，不中断整个过程
                     continue
-
         zip_data = zip_buffer.getvalue()
         zip_buffer.close()
         return zip_data
@@ -426,13 +607,19 @@ class GenTableService:
     @classmethod
     @handle_service_exception
     async def sync_db_service(cls, auth: AuthSchema, table_name: str) -> None:
-        """同步数据库表结构至生成器（保留用户配置）。
-        - 备注：按数据库实际字段重建或更新生成器字段；保留字典/查询/展示等用户自定义属性；清理已删除字段。
+        """
+        同步数据库表结构到业务表。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_name (str): 业务表名。
+
+        返回:
+        - None
         """
         # 验证表名非空
         if not table_name or not table_name.strip():
             raise CustomException(msg='表名不能为空')
-            
         gen_table = await GenTableCRUD(auth).get_gen_table_by_name(table_name)
         if not gen_table:
             raise CustomException(msg='业务表不存在')
@@ -447,40 +634,27 @@ class GenTableService:
         db_table_column_names = [column.column_name for column in db_table_columns]
         try:
             for column in db_table_columns:
-                # 仅在缺省时初始化默认属性（包含 table_id 关联）
                 GenUtils.init_column_field(column, table)
-                # 利用schema层的默认值，移除多余的None检查
                 if column.column_name in table_column_map:
                     prev_column = table_column_map[column.column_name]
-                    # 复用旧记录ID，确保执行更新
                     if hasattr(prev_column, 'id') and prev_column.id:
                         column.id = prev_column.id
-
-                    # 保留用户配置的显示与查询属性 - 使用getattr确保安全访问
                     if hasattr(prev_column, 'dict_type') and prev_column.dict_type:
                         column.dict_type = prev_column.dict_type
                     if hasattr(prev_column, 'query_type') and prev_column.query_type:
                         column.query_type = prev_column.query_type
                     if hasattr(prev_column, 'html_type') and prev_column.html_type:
                         column.html_type = prev_column.html_type
-
-                    # 保留关键用户自定义属性 - 安全处理is_pk
                     is_pk_bool = False
                     if hasattr(prev_column, 'is_pk'):
-                        # 处理不同类型的is_pk值
                         if isinstance(prev_column.is_pk, bool):
                             is_pk_bool = prev_column.is_pk
                         else:
                             is_pk_bool = str(prev_column.is_pk) == '1'
-                    
-                    # 安全处理nullable属性
                     if hasattr(prev_column, 'is_nullable') and not is_pk_bool:
                         column.is_nullable = prev_column.is_nullable
-                    
-                    # 保留其他重要用户设置
                     if hasattr(prev_column, 'python_field'):
                         column.python_field = prev_column.python_field or column.python_field
-
                     if hasattr(column, 'id') and column.id:
                         await GenTableColumnCRUD(auth).update_gen_table_column_crud(column.id, column)
                     else:
@@ -501,6 +675,12 @@ class GenTableService:
     async def set_pk_column(cls, gen_table: GenTableOutSchema) -> None:
         """设置主键列信息（主表/子表）。
         - 备注：同时兼容`pk`布尔与`is_pk == '1'`字符串两种标识。
+        
+        参数:
+        - gen_table (GenTableOutSchema): 业务表详细信息模型。
+
+        返回:
+        - None
         """
         if gen_table.columns:
             for column in gen_table.columns:
@@ -531,34 +711,30 @@ class GenTableService:
         # 检查表是否存在
         if gen_table_model is None:
             raise CustomException(msg=f"业务表 {table_name} 不存在")
-            
         gen_table = GenTableOutSchema.model_validate(gen_table_model)
         await cls.set_pk_column(gen_table)
         context = Jinja2TemplateUtil.prepare_context(gen_table)
         template_list = Jinja2TemplateUtil.get_template_list()
         output_files = [Jinja2TemplateUtil.get_file_name(template, gen_table) for template in template_list]
-
         return [template_list, output_files, context, gen_table]
 
     @classmethod
     def __get_gen_path(cls, gen_table: GenTableOutSchema, template: str) -> str | None:
-        """根据GenTableOutSchema对象和模板名称生成路径。"""
+        """根据GenTableOutSchema对象和模板名称生成路径。
+        
+        参数:
+        - gen_table (GenTableOutSchema): 业务表详细信息模型。
+        - template (str): 模板名称。
+        
+        返回:
+        - str | None: 生成的文件路径，若失败则返回None。
+        """
         try:
             file_name = Jinja2TemplateUtil.get_file_name(template, gen_table)
-            # 默认写入到项目根目录（backend的上一级）
-            project_root = str(BASE_DIR.parent)
-            full_path = os.path.join(project_root, file_name)
-            
-            # 确保路径在项目根目录内，防止路径遍历攻击
-            if not os.path.abspath(full_path).startswith(os.path.abspath(project_root)):
-                log.error(f"路径越界，回退到项目根目录: {file_name}")
-                # 回退到项目根目录下的generated文件夹
-                full_path = os.path.join(project_root, "generated", os.path.basename(file_name))
-            
-            return full_path
+            full_path = BASE_DIR.parent.joinpath(file_name)
+            return str(full_path)
         except Exception as e:
-            log.error(f"生成路径时出错: {str(e)}")
-            return None
+            raise CustomException(msg=f"生成路径时出错: {str(e)}")
 
 
 class GenTableColumnService:
@@ -567,7 +743,15 @@ class GenTableColumnService:
     @classmethod
     @handle_service_exception
     async def get_gen_table_column_list_by_table_id_service(cls, auth: AuthSchema, table_id: int) -> list[dict[str, Any]]:
-        """获取业务表字段列表信息（输出模型）。"""
+        """获取业务表字段列表信息（输出模型）。
+        
+        参数:
+        - auth (AuthSchema): 认证信息。
+        - table_id (int): 业务表ID。
+        
+        返回:
+        - list[dict[str, Any]]: 业务表字段列表，每个元素为字段详细信息字典。
+        """
         gen_table_column_list_result = await GenTableColumnCRUD(auth).list_gen_table_column_crud({"table_id": table_id})
         result = [GenTableColumnOutSchema.model_validate(gen_table_column).model_dump() for gen_table_column in gen_table_column_list_result]
         return result

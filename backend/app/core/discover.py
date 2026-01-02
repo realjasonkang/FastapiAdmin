@@ -119,20 +119,19 @@ class DiscoverRouter:
         """
         base_pkg = importlib.import_module(self.base_package)
         base_dir = Path(next(iter(base_pkg.__path__)))
-        log.info(f"📁 基础包路径: {base_dir}, 包名: {base_pkg.__name__}")
+        log.debug(f"📁 基础包名: {base_pkg.__name__}")
         return base_dir, base_pkg.__name__
     
     def _iter_controller_files(self, base_dir: Path) -> Iterable[Path]:
         """递归查找并返回所有 `controller.py` 文件，按路径排序保证确定性。"""
         try:
             files = sorted(base_dir.rglob("controller.py"), key=lambda p: p.as_posix())
-            log.info(f"🔍 发现 {len(files)} 个控制器文件")
             return files
         except PermissionError as e:
             log.error(f"❌️ 权限错误: 无法访问目录 {base_dir}: {str(e)}")
             return []
         except Exception as e:
-            log.error(f"❌️ 查找控制器文件失败: {str(e)}")
+            log.error(f"❌️ 查找 controller.py 文件失败: {str(e)}")
             return []
     
     def _resolve_prefix(self, top_module: str) -> str | None:
@@ -143,12 +142,12 @@ class DiscoverRouter:
             return None
         if not top_module.startswith(self.module_prefix):
             if self.debug:
-                log.warning(f"⚠️ 目录 {top_module} 不符合前缀约定 {self.module_prefix}")
+                log.warning(f"⚠️ 目录 {top_module} 不符合前缀约定（必须以 {self.module_prefix} 开头）")
             return None
         
         mapped = self.prefix_map.get(top_module)
         if mapped:
-            log.info(f"🔄 模块 {top_module} 映射到前缀 {mapped}")
+            log.debug(f"🔄 模块 {top_module} 映射到前缀 {mapped}")
             return mapped
         
         prefix = f"/{top_module[len(self.module_prefix):]}"
@@ -181,10 +180,9 @@ class DiscoverRouter:
                 self._seen_router_ids.add(rid)
                 container.include_router(attr)
                 added += 1
-                log.info(f"➕ 注册路由 {attr_name} 到容器")
         
         if router_count == 0:
-            log.warning(f"⚠️ 模块 {mod_name} 中未发现 APIRouter 实例")
+            log.warning(f"⚠️ 模块 {mod_name} 中未发现接口路由，跳过注册")
         
         return added
     
@@ -200,7 +198,7 @@ class DiscoverRouter:
             - included_routers: 注册的路由数量
             - container_count: 容器数量
         """
-        log.info("🚀 开始路由发现与注册...")
+        log.debug("🚀 开始路由发现与注册...")
         base_dir, base_pkg = self._get_base_dir_and_pkg()
         containers: dict[str, APIRouter] = {}
         container_counts: dict[str, int] = {}
@@ -215,12 +213,12 @@ class DiscoverRouter:
                 scanned_files += 1
 
                 if rel_path in self.exclude_files:
-                    log.warning(f"⚠️ 文件 {rel_path} 被排除")
+                    log.warning(f"⚠️ 排除文件: {rel_path}")
                     continue
 
                 parts = file.relative_to(base_dir).parts
                 if len(parts) < 2:
-                    log.warning(f"⚠️ 文件路径不完整: {rel_path}，跳过")
+                    log.warning(f"⚠️ 跳过不完整路径: {rel_path}")
                     continue
 
                 top_module = parts[0]
@@ -233,12 +231,12 @@ class DiscoverRouter:
                 try:
                     mod = importlib.import_module(mod_path)
                     imported_modules += 1
-                    log.info(f"📥 导入模块: {mod_path}")
+                    log.debug(f"📥 导入分系统模块: {mod_path}")
                 except ModuleNotFoundError:
-                    log.error(f"❌️ 未找到控制器模块: {mod_path}")
+                    log.error(f"❌️ 未找到模块: {mod_path}")
                     continue
                 except ImportError as e:
-                    log.error(f"❌️ 导入控制器失败: {mod_path} -> {str(e)}")
+                    log.error(f"❌️ 导入模块失败: {mod_path} -> {str(e)}")
                     continue
 
                 container = containers.setdefault(prefix, APIRouter(prefix=prefix))
@@ -247,7 +245,7 @@ class DiscoverRouter:
                     included_routers += added
                     container_counts[prefix] = container_counts.get(prefix, 0) + added
                 except Exception as e:
-                    log.error(f"❌️ 注册控制器路由失败: {mod_path} -> {str(e)}")
+                    log.error(f"❌️ 注册路由失败: {mod_path} -> {str(e)}")
 
             # 将容器路由按前缀名称排序后注册到根路由，保证顺序稳定
             for prefix in sorted(containers.keys()):
@@ -259,7 +257,7 @@ class DiscoverRouter:
                 self._router.include_router(container)
                 # 更丰富的注册日志（含路由数量）
                 count = container_counts.get(prefix, 0)
-                log.info(f"✅️ 已注册模块容器: {prefix} (路由数: {count})")
+                log.debug(f"✅️ 注册分系统: {prefix} (路由数: {count})")
 
             # 更新统计信息
             stats = {
@@ -271,12 +269,11 @@ class DiscoverRouter:
             self._discovery_stats = stats
 
             # 生成总结日志
-            log.info(
-                (
-                    f"✅️ 路由发现完成: 扫描文件 {scanned_files}, "
-                    f"导入模块 {imported_modules}, 注册路由 {included_routers}, "
-                    f"容器 {len(containers)}"
-                )
+            log.debug(
+                f"✅️ 路由发现完成: 扫描 {scanned_files} 个文件, "
+                f"导入 {imported_modules} 个模块, "
+                f"注册 {included_routers} 个路由, "
+                f"创建 {len(containers)} 个路由"
             )
             
             return stats
@@ -296,7 +293,7 @@ class DiscoverRouter:
         """
         self.debug = debug
         log_level = "DEBUG" if debug else "INFO"
-        log.info(f"⚙️ 调试模式已{'开启' if debug else '关闭'}，日志级别: {log_level}")
+        log.debug(f"⚙️ 调试模式已{'开启' if debug else '关闭'}，日志级别: {log_level}")
         return self
     
     def add_exclude_dir(self, dir_name: str) -> 'DiscoverRouter':
@@ -309,7 +306,7 @@ class DiscoverRouter:
         - self: 支持链式调用
         """
         self.exclude_dirs.add(dir_name)
-        log.info(f"📝 添加排除目录: {dir_name}")
+        log.debug(f"📝 添加排除目录: {dir_name}")
         return self
     
     def add_prefix_map(self, module_name: str, prefix: str) -> 'DiscoverRouter':
@@ -323,7 +320,7 @@ class DiscoverRouter:
         - self: 支持链式调用
         """
         self.prefix_map[module_name] = prefix
-        log.info(f"📝 添加前缀映射: {module_name} -> {prefix}")
+        log.debug(f"📝 添加前缀映射: {module_name} -> {prefix}")
         return self
     
     @_log_error_handling
@@ -338,7 +335,7 @@ class DiscoverRouter:
         if rid not in self._seen_router_ids:
             self._seen_router_ids.add(rid)
             self._router.include_router(router, tags=tags)
-            log.info(f"📌 手动注册路由，标签: {tags}")
+            log.debug(f"📌 手动注册路由，标签: {tags or '无'}")
         else:
             log.warning(f"⚠️ 路由已存在，跳过重复注册")
 
@@ -351,6 +348,3 @@ router = _discoverer.router
 
 # 导出 DiscoverRouter 类供外部使用
 __all__ = ["DiscoverRouter", "router"]
-
-
-# 执行自动发现注册（已由 DiscoverRouter 实例内部处理）
