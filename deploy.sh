@@ -279,27 +279,27 @@ fi
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --stop)
-            stop_project
-            exit 0
-            ;;
-        --start)
+        start)
             main
             exit 0
             ;;
-        --logs|-l)
+        stop)
+            stop_project
+            exit 0
+            ;;
+        logs)
             show_containers_logs
             exit 0
             ;;
-        --help|-h)
+        help|-h)
             echo "使用说明："
             echo "  $0 [选项]"
             echo ""
             echo "选项："
-            echo "  --stop      停止所有容器"
-            echo "  --start     启动所有容器"
-            echo "  --logs      查看所有容器日志"
-            echo "  --help      显示此帮助信息"
+            echo "  stop       停止所有容器"
+            echo "  start      启动所有容器"
+            echo "  logs       查看所有容器日志"
+            echo "  help|-h    显示此帮助信息"
             echo ""
             echo "默认执行完整部署流程："
             echo "  1. 检查权限"
