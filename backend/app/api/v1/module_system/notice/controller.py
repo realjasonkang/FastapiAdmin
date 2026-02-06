@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission, get_current_user
@@ -23,7 +23,7 @@ NoticeRouter = APIRouter(route_class=OperationLogRoute, prefix="/notice", tags=[
     "/detail/{id}",
     summary="获取公告详情",
     description="获取公告详情",
-    response_model=NoticeOutSchema,
+    response_model=ResponseSchema[NoticeOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="公告ID")],
@@ -48,7 +48,7 @@ async def get_obj_detail_controller(
     "/list",
     summary="查询公告",
     description="查询公告",
-    response_model=list[NoticeOutSchema],
+    response_model=ResponseSchema[list[NoticeOutSchema]],
 )
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -82,7 +82,7 @@ async def get_obj_list_controller(
     "/create",
     summary="创建公告",
     description="创建公告",
-    response_model=NoticeOutSchema,
+    response_model=ResponseSchema[NoticeOutSchema],
 )
 async def create_obj_controller(
     data: NoticeCreateSchema,
@@ -107,7 +107,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改公告",
     description="修改公告",
-    response_model=NoticeOutSchema,
+    response_model=ResponseSchema[NoticeOutSchema],
 )
 async def update_obj_controller(
     data: NoticeUpdateSchema,
@@ -134,6 +134,7 @@ async def update_obj_controller(
     "/delete",
     summary="删除公告",
     description="删除公告",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -158,6 +159,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改公告状态",
     description="批量修改公告状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,
@@ -182,6 +184,7 @@ async def batch_set_available_obj_controller(
     "/export",
     summary="导出公告",
     description="导出公告",
+    response_model=ResponseSchema[None],
 )
 async def export_obj_list_controller(
     search: Annotated[NoticeQueryParam, Depends()],
@@ -212,7 +215,7 @@ async def export_obj_list_controller(
     "/available",
     summary="获取全局启用公告",
     description="获取全局启用公告",
-    response_model=list[NoticeOutSchema],
+    response_model=ResponseSchema[list[NoticeOutSchema]],
 )
 async def get_obj_list_available_controller(
     auth: Annotated[AuthSchema, Depends(get_current_user)],

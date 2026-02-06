@@ -3,6 +3,7 @@ import re
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema, UserBySchema
 from app.core.validator import DateTimeStr
 
@@ -89,28 +90,28 @@ class OperationLogQueryParam:
         updated_id: int | None = Query(None, description="更新人"),
     ) -> None:
         # 模糊查询字段
-        self.request_path = ("like", f"%{request_path}%") if request_path else None
+        self.request_path = (QueueEnum.like.value, request_path)
         # 精确查询字段
-        self.request_method = request_method
-        self.request_ip = request_ip
-        self.response_code = response_code
-        self.type = type
+        self.request_method = (QueueEnum.eq.value, request_method)
+        self.request_ip = (QueueEnum.eq.value, request_ip)
+        self.response_code = (QueueEnum.eq.value, response_code)
+        self.type = (QueueEnum.eq.value, type)
         # 模糊查询字段
         if description:
-            self.description = ("like", description)
+            self.description = (QueueEnum.like.value, description)
 
         # 精确查询字段
         if status:
-            self.status = ("eq", status)
+            self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))
 
         # 关联查询字段
         if created_id:
-            self.created_id = ("eq", created_id)
+            self.created_id = (QueueEnum.eq.value, created_id)
         if updated_id:
-            self.updated_id = ("eq", updated_id)
+            self.updated_id = (QueueEnum.eq.value, updated_id)

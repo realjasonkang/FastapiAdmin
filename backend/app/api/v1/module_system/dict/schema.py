@@ -9,6 +9,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema
 from app.core.validator import DateTimeStr
 
@@ -71,19 +72,17 @@ class DictTypeQueryParam:
         super().__init__()
 
         # 模糊查询字段
-        self.dict_name = (
-            ("like", f"%{dict_name.strip()}%") if dict_name and dict_name.strip() else None
-        )
+        self.dict_name = (QueueEnum.like.value, dict_name)
 
         # 精确查询字段
-        self.dict_type = dict_type.strip() if dict_type else None
-        self.status = status
+        self.dict_type = (QueueEnum.eq.value, dict_type)
+        self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))
 
 
 class DictDataCreateSchema(BaseModel):
@@ -155,17 +154,15 @@ class DictDataQueryParam:
     ) -> None:
 
         # 模糊查询字段
-        self.dict_label = (
-            ("like", f"%{dict_label.strip()}%") if dict_label and dict_label.strip() else None
-        )
+        self.dict_label = (QueueEnum.like.value, dict_label)
 
         # 精确查询字段
-        self.dict_type = dict_type.strip() if dict_type else None
-        self.dict_type_id = dict_type_id
-        self.status = status
+        self.dict_type = (QueueEnum.eq.value, dict_type)
+        self.dict_type_id = (QueueEnum.eq.value, dict_type_id)
+        self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))

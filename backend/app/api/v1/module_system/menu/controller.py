@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from app.common.response import SuccessResponse
+from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
@@ -20,7 +20,7 @@ MenuRouter = APIRouter(route_class=OperationLogRoute, prefix="/menu", tags=["菜
     "/tree",
     summary="查询菜单树",
     description="查询菜单树",
-    response_model=list[MenuOutSchema],
+    response_model=ResponseSchema[list[MenuOutSchema]],
 )
 async def get_menu_tree_controller(
     search: Annotated[MenuQueryParam, Depends()],
@@ -47,7 +47,7 @@ async def get_menu_tree_controller(
     "/detail/{id}",
     summary="查询菜单详情",
     description="查询菜单详情",
-    response_model=MenuOutSchema,
+    response_model=ResponseSchema[MenuOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="菜单ID")],
@@ -71,7 +71,7 @@ async def get_obj_detail_controller(
     "/create",
     summary="创建菜单",
     description="创建菜单",
-    response_model=MenuOutSchema,
+    response_model=ResponseSchema[MenuOutSchema],
 )
 async def create_obj_controller(
     data: MenuCreateSchema,
@@ -95,7 +95,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改菜单",
     description="修改菜单",
-    response_model=MenuOutSchema,
+    response_model=ResponseSchema[MenuOutSchema],
 )
 async def update_obj_controller(
     data: MenuUpdateSchema,
@@ -121,6 +121,7 @@ async def update_obj_controller(
     "/delete",
     summary="删除菜单",
     description="删除菜单",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -144,6 +145,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改菜单状态",
     description="批量修改菜单状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,

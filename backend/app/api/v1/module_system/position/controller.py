@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission
@@ -28,7 +28,7 @@ PositionRouter = APIRouter(route_class=OperationLogRoute, prefix="/position", ta
     "/list",
     summary="查询岗位",
     description="查询岗位",
-    response_model=list[PositionOutSchema],
+    response_model=ResponseSchema[list[PositionOutSchema]],
 )
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -65,7 +65,7 @@ async def get_obj_list_controller(
     "/detail/{id}",
     summary="查询岗位详情",
     description="查询岗位详情",
-    response_model=PositionOutSchema,
+    response_model=ResponseSchema[PositionOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="岗位ID")],
@@ -90,7 +90,7 @@ async def get_obj_detail_controller(
     "/create",
     summary="创建岗位",
     description="创建岗位",
-    response_model=PositionOutSchema,
+    response_model=ResponseSchema[PositionOutSchema],
 )
 async def create_obj_controller(
     data: PositionCreateSchema,
@@ -115,7 +115,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改岗位",
     description="修改岗位",
-    response_model=PositionOutSchema,
+    response_model=ResponseSchema[PositionOutSchema],
 )
 async def update_obj_controller(
     data: PositionUpdateSchema,
@@ -142,6 +142,7 @@ async def update_obj_controller(
     "/delete",
     summary="删除岗位",
     description="删除岗位",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -166,6 +167,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改岗位状态",
     description="批量修改岗位状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,
@@ -190,6 +192,7 @@ async def batch_set_available_obj_controller(
     "/export",
     summary="导出岗位",
     description="导出岗位",
+    response_model=ResponseSchema[None],
 )
 async def export_obj_list_controller(
     search: Annotated[PositionQueryParam, Depends()],

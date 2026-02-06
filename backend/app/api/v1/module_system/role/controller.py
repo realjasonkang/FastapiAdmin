@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission
@@ -29,7 +29,7 @@ RoleRouter = APIRouter(route_class=OperationLogRoute, prefix="/role", tags=["角
     "/list",
     summary="查询角色",
     description="查询角色",
-    response_model=list[RoleOutSchema],
+    response_model=ResponseSchema[list[RoleOutSchema]],
 )
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -66,7 +66,7 @@ async def get_obj_list_controller(
     "/detail/{id}",
     summary="查询角色详情",
     description="查询角色详情",
-    response_model=RoleOutSchema,
+    response_model=ResponseSchema[RoleOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="角色ID")],
@@ -91,7 +91,7 @@ async def get_obj_detail_controller(
     "/create",
     summary="创建角色",
     description="创建角色",
-    response_model=RoleOutSchema,
+    response_model=ResponseSchema[RoleOutSchema],
 )
 async def create_obj_controller(
     data: RoleCreateSchema,
@@ -116,7 +116,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改角色",
     description="修改角色",
-    response_model=RoleOutSchema,
+    response_model=ResponseSchema[RoleOutSchema],
 )
 async def update_obj_controller(
     data: RoleUpdateSchema,
@@ -143,6 +143,7 @@ async def update_obj_controller(
     "/delete",
     summary="删除角色",
     description="删除角色",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -167,6 +168,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改角色状态",
     description="批量修改角色状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,
@@ -191,6 +193,7 @@ async def batch_set_available_obj_controller(
     "/permission/setting",
     summary="角色授权",
     description="角色授权",
+    response_model=ResponseSchema[None],
 )
 async def set_role_permission_controller(
     data: RolePermissionSettingSchema,
@@ -215,6 +218,7 @@ async def set_role_permission_controller(
     "/export",
     summary="导出角色",
     description="导出角色",
+    response_model=ResponseSchema[None],
 )
 async def export_obj_list_controller(
     search: Annotated[RoleQueryParam, Depends()],

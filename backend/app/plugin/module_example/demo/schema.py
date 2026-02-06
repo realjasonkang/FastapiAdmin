@@ -9,6 +9,7 @@ from pydantic import (
     model_validator,
 )
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema, UserBySchema
 from app.core.validator import DateStr, DateTimeStr, TimeStr
 
@@ -91,22 +92,22 @@ class DemoQueryParam:
         updated_id: int | None = Query(None, description="更新人"),
     ) -> None:
         # 模糊查询字段
-        self.name = ("like", name)
+        self.name = (QueueEnum.like.value, name)
         if description:
-            self.description = ("like", description)
+            self.description = (QueueEnum.like.value, description)
 
         # 精确查询字段
         if status:
-            self.status = ("eq", status)
+            self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))
 
         # 关联查询字段
         if created_id:
-            self.created_id = ("eq", created_id)
+            self.created_id = (QueueEnum.eq.value, created_id)
         if updated_id:
-            self.updated_id = ("eq", updated_id)
+            self.updated_id = (QueueEnum.eq.value, updated_id)

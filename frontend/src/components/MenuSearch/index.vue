@@ -1,6 +1,13 @@
 <template>
   <div @click="openSearchModal">
-    <div class="i-svg:search" />
+    <!-- <div class="i-svg:search" /> -->
+    <div class="command-palette-trigger" role="button" tabindex="0" aria-label="打开搜索面板">
+      <div class="command-palette-trigger__left">
+        <div class="i-svg:search" />
+        <span class="command-palette-trigger__text">搜索菜单</span>
+      </div>
+      <kbd class="command-palette-trigger__kbd">Ctrl K</kbd>
+    </div>
     <el-dialog
       v-model="isModalVisible"
       width="30%"
@@ -337,6 +344,58 @@ function loadRoutes(routes: RouteRecordRaw[], parentPath = "") {
 </script>
 
 <style scoped lang="scss">
+.command-palette-trigger {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 12px;
+  user-select: none;
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 999px;
+}
+
+.command-palette-trigger__left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.command-palette-trigger__left :deep([class^="i-svg:"]) {
+  color: var(--el-text-color-secondary) !important;
+}
+
+.command-palette-trigger__text {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+}
+
+.command-palette-trigger__kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+}
+
+.command-palette-trigger:focus-visible {
+  outline: 2px solid var(--el-color-primary);
+  outline-offset: 2px;
+}
+
+.command-palette-trigger:hover {
+  border-color: var(--el-border-color);
+}
+
 .search-result {
   max-height: 400px;
   overflow-y: auto;

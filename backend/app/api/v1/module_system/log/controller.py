@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
@@ -22,7 +22,7 @@ LogRouter = APIRouter(route_class=OperationLogRoute, prefix="/log", tags=["日�
     "/list",
     summary="查询日志",
     description="查询日志",
-    response_model=list[OperationLogOutSchema],
+    response_model=ResponseSchema[list[OperationLogOutSchema]],
 )
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -59,7 +59,7 @@ async def get_obj_list_controller(
     "/detail/{id}",
     summary="日志详情",
     description="日志详情",
-    response_model=OperationLogOutSchema,
+    response_model=ResponseSchema[OperationLogOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="操作日志ID")],
@@ -84,6 +84,7 @@ async def get_obj_detail_controller(
     "/delete",
     summary="删除日志",
     description="删除日志",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_log_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -108,6 +109,7 @@ async def delete_obj_log_controller(
     "/export",
     summary="导出日志",
     description="导出日志",
+    response_model=ResponseSchema[None],
 )
 async def export_obj_list_controller(
     search: Annotated[OperationLogQueryParam, Depends()],

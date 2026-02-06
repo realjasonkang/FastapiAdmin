@@ -26,6 +26,7 @@ interface SettingsState {
   sidebarColorScheme: string;
   grayMode: boolean;
   userEnableAi: boolean;
+  pageSwitchingAnimation: string;
 
   // 主题设置
   theme: ThemeMode;
@@ -59,7 +60,7 @@ export const useSettingsStore = defineStore("setting", () => {
   );
 
   // 是否显示引导功能
-  const showGuide = useStorage<boolean>(SETTINGS_KEYS.SHOW_GUIDE, defaultSettings.showGuide); // 引导功能开关
+  const showGuide = useStorage<boolean>(SETTINGS_KEYS.SHOW_GUIDE, defaultSettings.showGuide);
 
   // 🎯 桌面端工具设置 - 持久化
   const showMenuSearch = useStorage<boolean>(
@@ -108,6 +109,11 @@ export const useSettingsStore = defineStore("setting", () => {
   const grayMode = useStorage<boolean>(SETTINGS_KEYS.GRAY_MODE, defaultSettings.grayMode);
   // 是否开启AI助手
   const userEnableAi = useStorage<boolean>(SETTINGS_KEYS.AI_ENABLED, defaultSettings.aiEnabled);
+  // 页面切换动画
+  const pageSwitchingAnimation = useStorage<string>(
+    SETTINGS_KEYS.PAGE_SWITCHING_ANIMATION,
+    defaultSettings.pageSwitchingAnimation
+  );
 
   // 🎯 设置项映射
   const settingsMap = {
@@ -209,6 +215,11 @@ export const useSettingsStore = defineStore("setting", () => {
     grayMode.value = newValue;
   }
 
+  // 更新页面切换动画
+  function updatePageSwitchingAnimation(newValue: string): void {
+    pageSwitchingAnimation.value = newValue;
+  }
+
   // 🎯 批量重置设置
   function resetSettings(): void {
     // 界面显示设置
@@ -234,6 +245,7 @@ export const useSettingsStore = defineStore("setting", () => {
     // 系统设置
     grayMode.value = defaultSettings.grayMode;
     userEnableAi.value = defaultSettings.aiEnabled;
+    pageSwitchingAnimation.value = defaultSettings.pageSwitchingAnimation;
   }
 
   return {
@@ -275,6 +287,8 @@ export const useSettingsStore = defineStore("setting", () => {
     // 🎯 系统设置状态
     grayMode,
     userEnableAi,
+    pageSwitchingAnimation,
+    updatePageSwitchingAnimation,
 
     // 🎯 更新系统设置方法
     updateUserEnableAi,

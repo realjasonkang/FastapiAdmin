@@ -6,7 +6,7 @@ from redis.asyncio.client import Redis
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission, redis_getter
@@ -33,7 +33,7 @@ DictRouter = APIRouter(route_class=OperationLogRoute, prefix="/dict", tags=["字
     "/type/detail/{id}",
     summary="获取字典类型详情",
     description="获取字典类型详情",
-    response_model=DictTypeOutSchema,
+    response_model=ResponseSchema[DictTypeOutSchema],
 )
 async def get_type_detail_controller(
     id: Annotated[int, Path(description="字典类型ID", ge=1)],
@@ -61,7 +61,7 @@ async def get_type_detail_controller(
     "/type/list",
     summary="查询字典类型",
     description="查询字典类型",
-    response_model=list[DictTypeOutSchema],
+    response_model=ResponseSchema[list[DictTypeOutSchema]],
 )
 async def get_type_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -98,7 +98,7 @@ async def get_type_list_controller(
     "/type/optionselect",
     summary="获取全部字典类型",
     description="获取全部字典类型",
-    response_model=list[DictTypeOutSchema],
+    response_model=ResponseSchema[list[DictTypeOutSchema]],
 )
 async def get_type_loptionselect_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_system:dict_type:query"]))],
@@ -124,7 +124,7 @@ async def get_type_loptionselect_controller(
     "/type/create",
     summary="创建字典类型",
     description="创建字典类型",
-    response_model=DictTypeOutSchema,
+    response_model=ResponseSchema[DictTypeOutSchema],
 )
 async def create_type_controller(
     data: DictTypeCreateSchema,
@@ -154,7 +154,7 @@ async def create_type_controller(
     "/type/update/{id}",
     summary="修改字典类型",
     description="修改字典类型",
-    response_model=DictTypeOutSchema,
+    response_model=ResponseSchema[DictTypeOutSchema],
 )
 async def update_type_controller(
     data: DictTypeUpdateSchema,
@@ -186,6 +186,7 @@ async def update_type_controller(
     "/type/delete",
     summary="删除字典类型",
     description="删除字典类型",
+    response_model=ResponseSchema[None],
 )
 async def delete_type_controller(
     redis: Annotated[Redis, Depends(redis_getter)],
@@ -215,6 +216,7 @@ async def delete_type_controller(
     "/type/available/setting",
     summary="批量修改字典类型状态",
     description="批量修改字典类型状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_dict_type_controller(
     data: BatchSetAvailable,
@@ -242,6 +244,7 @@ async def batch_set_available_dict_type_controller(
     "/type/export",
     summary="导出字典类型",
     description="导出字典类型",
+    response_model=ResponseSchema[None],
 )
 async def export_type_list_controller(
     search: Annotated[DictTypeQueryParam, Depends()],
@@ -276,7 +279,7 @@ async def export_type_list_controller(
     "/data/detail/{id}",
     summary="获取字典数据详情",
     description="获取字典数据详情",
-    response_model=DictDataOutSchema,
+    response_model=ResponseSchema[DictDataOutSchema],
 )
 async def get_data_detail_controller(
     id: Annotated[int, Path(description="字典数据ID", ge=1)],
@@ -304,7 +307,7 @@ async def get_data_detail_controller(
     "/data/list",
     summary="查询字典数据",
     description="查询字典数据",
-    response_model=list[DictDataOutSchema],
+    response_model=ResponseSchema[list[DictDataOutSchema]],
 )
 async def get_data_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -344,7 +347,7 @@ async def get_data_list_controller(
     "/data/create",
     summary="创建字典数据",
     description="创建字典数据",
-    response_model=DictDataOutSchema,
+    response_model=ResponseSchema[DictDataOutSchema],
 )
 async def create_data_controller(
     data: DictDataCreateSchema,
@@ -374,7 +377,7 @@ async def create_data_controller(
     "/data/update/{id}",
     summary="修改字典数据",
     description="修改字典数据",
-    response_model=DictDataOutSchema,
+    response_model=ResponseSchema[DictDataOutSchema],
 )
 async def update_data_controller(
     data: DictDataUpdateSchema,
@@ -406,6 +409,7 @@ async def update_data_controller(
     "/data/delete",
     summary="删除字典数据",
     description="删除字典数据",
+    response_model=ResponseSchema[None],
 )
 async def delete_data_controller(
     redis: Annotated[Redis, Depends(redis_getter)],
@@ -435,6 +439,7 @@ async def delete_data_controller(
     "/data/available/setting",
     summary="批量修改字典数据状态",
     description="批量修改字典数据状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_dict_data_controller(
     data: BatchSetAvailable,
@@ -462,6 +467,7 @@ async def batch_set_available_dict_data_controller(
     "/data/export",
     summary="导出字典数据",
     description="导出字典数据",
+    response_model=ResponseSchema[None],
 )
 async def export_data_list_controller(
     search: Annotated[DictDataQueryParam, Depends()],
@@ -499,7 +505,7 @@ async def export_data_list_controller(
     "/data/info/{dict_type}",
     summary="根据字典类型获取数据",
     description="根据字典类型获取数据",
-    response_model=list[DictDataOutSchema],
+    response_model=ResponseSchema[list[DictDataOutSchema]],
 )
 async def get_init_dict_data_controller(
     dict_type: str, redis: Annotated[Redis, Depends(redis_getter)]

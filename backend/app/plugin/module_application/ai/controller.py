@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
@@ -14,6 +14,7 @@ from app.core.router_class import OperationLogRoute
 from .schema import (
     ChatQuerySchema,
     McpCreateSchema,
+    McpOutSchema,
     McpQueryParam,
     McpUpdateSchema,
 )
@@ -22,7 +23,11 @@ from .service import McpService
 AIRouter = APIRouter(route_class=OperationLogRoute, prefix="/ai", tags=["MCP智能助手"])
 
 
-@AIRouter.post("/chat", summary="智能对话", description="与MCP智能助手进行对话")
+@AIRouter.post(
+    "/chat",
+    summary="智能对话",
+    description="与MCP智能助手进行对话",
+)
 async def chat_controller(
     query: ChatQuerySchema,
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:ai:chat"]))],
@@ -56,6 +61,7 @@ async def chat_controller(
     "/detail/{id}",
     summary="获取 MCP 服务器详情",
     description="获取 MCP 服务器详情",
+    response_model=ResponseSchema[McpOutSchema],
 )
 async def detail_controller(
     id: Annotated[int, Path(description="MCP ID")],
@@ -75,7 +81,12 @@ async def detail_controller(
     return SuccessResponse(data=result_dict, msg="获取 MCP 服务器详情成功")
 
 
-@AIRouter.get("/list", summary="查询 MCP 服务器列表", description="查询 MCP 服务器列表")
+@AIRouter.get(
+    "/list",
+    summary="查询 MCP 服务器列表",
+    description="查询 MCP 服务器列表",
+    response_model=ResponseSchema[list[McpOutSchema]],
+)
 async def list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[McpQueryParam, Depends()],
@@ -104,7 +115,12 @@ async def list_controller(
     return SuccessResponse(data=result_dict, msg="查询 MCP 服务器列表成功")
 
 
-@AIRouter.post("/create", summary="创建 MCP 服务器", description="创建 MCP 服务器")
+@AIRouter.post(
+    "/create",
+    summary="创建 MCP 服务器",
+    description="创建 MCP 服务器",
+    response_model=ResponseSchema[McpOutSchema],
+)
 async def create_controller(
     data: McpCreateSchema,
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:ai:create"]))],
@@ -124,7 +140,12 @@ async def create_controller(
     return SuccessResponse(data=result_dict, msg="创建 MCP 服务器成功")
 
 
-@AIRouter.put("/update/{id}", summary="修改 MCP 服务器", description="修改 MCP 服务器")
+@AIRouter.put(
+    "/update/{id}",
+    summary="修改 MCP 服务器",
+    description="修改 MCP 服务器",
+    response_model=ResponseSchema[McpOutSchema],
+)
 async def update_controller(
     data: McpUpdateSchema,
     id: Annotated[int, Path(description="MCP ID")],
@@ -146,7 +167,12 @@ async def update_controller(
     return SuccessResponse(data=result_dict, msg="修改 MCP 服务器成功")
 
 
-@AIRouter.delete("/delete", summary="删除 MCP 服务器", description="删除 MCP 服务器")
+@AIRouter.delete(
+    "/delete",
+    summary="删除 MCP 服务器",
+    description="删除 MCP 服务器",
+    response_model=ResponseSchema[None],
+)
 async def delete_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:ai:delete"]))],

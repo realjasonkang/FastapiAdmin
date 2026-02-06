@@ -1,6 +1,7 @@
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.enums import QueueEnum
 from app.core.validator import DateTimeStr
 
 
@@ -34,6 +35,6 @@ class OnlineQueryParam:
     ) -> None:
 
         # 模糊查询字段
-        self.name = ("like", f"%{name}%") if name else None
-        self.login_location = ("like", f"%{login_location}%") if login_location else None
-        self.ipaddr = ("like", f"%{ipaddr}%") if ipaddr else None
+        self.name = (QueueEnum.like.value, f"%{name}%") if name else None
+        self.login_location = (QueueEnum.like.value, f"%{login_location}%") if login_location else None
+        self.ipaddr = (QueueEnum.like.value, f"%{ipaddr}%") if ipaddr else None

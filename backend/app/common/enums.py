@@ -76,3 +76,21 @@ class McpLLMProvider(Enum):
     anthropic = "anthropic"
     gemini = "gemini"
     qwen = "qwen"
+
+
+@unique
+class QueueEnum(str, Enum):
+    """队列枚举"""
+    none = "None"
+    not_none = "not None"
+    date = "date"
+    month = "month"
+    like = "like"
+    eq = "eq" or "=="
+    in_ = "in"
+    between = "between"
+    ne = "!=" or "ne"
+    gt = ">" or "gt"
+    ge = ">=" or "ge"
+    lt = "<" or "lt"
+    le = "<=" or "le"

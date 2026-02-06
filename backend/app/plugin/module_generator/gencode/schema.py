@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema
 
 
@@ -121,8 +122,8 @@ class GenTableQueryParam:
         table_comment: str | None = Query(None, description="表注释"),
     ) -> None:
         # 模糊查询字段
-        self.table_name = table_name
-        self.table_comment = table_comment
+        self.table_name = (QueueEnum.like.value, table_name)
+        self.table_comment = (QueueEnum.like.value, table_comment)
 
 
 class GenTableColumnQueryParam:
@@ -135,4 +136,4 @@ class GenTableColumnQueryParam:
         column_name: str | None = Query(None, description="列名称"),
     ) -> None:
         # 模糊查询字段：约定("like", 值)格式，便于CRUD解析
-        self.column_name = ("like", column_name)
+        self.column_name = (QueueEnum.like.value, column_name)

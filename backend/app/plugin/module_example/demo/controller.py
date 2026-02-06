@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends, Path, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission
@@ -13,13 +13,18 @@ from app.core.logger import log
 from app.core.router_class import OperationLogRoute
 from app.utils.common_util import bytes2file_response
 
-from .schema import DemoCreateSchema, DemoQueryParam, DemoUpdateSchema
+from .schema import DemoCreateSchema, DemoOutSchema, DemoQueryParam, DemoUpdateSchema
 from .service import DemoService
 
 DemoRouter = APIRouter(route_class=OperationLogRoute, prefix="/demo", tags=["示例模块"])
 
 
-@DemoRouter.get("/detail/{id}", summary="获取示例详情", description="获取示例详情")
+@DemoRouter.get(
+    "/detail/{id}",
+    summary="获取示例详情",
+    description="获取示例详情",
+    response_model=ResponseSchema[DemoOutSchema],
+)
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="示例ID")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_example:demo:detail"]))],
@@ -39,7 +44,12 @@ async def get_obj_detail_controller(
     return SuccessResponse(data=result_dict, msg="获取示例详情成功")
 
 
-@DemoRouter.get("/list", summary="查询示例列表", description="查询示例列表")
+@DemoRouter.get(
+    "/list",
+    summary="查询示例列表",
+    description="查询示例列表",
+    response_model=ResponseSchema[list[DemoOutSchema]],
+)
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[DemoQueryParam, Depends()],
@@ -68,7 +78,12 @@ async def get_obj_list_controller(
     return SuccessResponse(data=result_dict, msg="查询示例列表成功")
 
 
-@DemoRouter.post("/create", summary="创建示例", description="创建示例")
+@DemoRouter.post(
+    "/create",
+    summary="创建示例",
+    description="创建示例",
+    response_model=ResponseSchema[DemoOutSchema],
+)
 async def create_obj_controller(
     data: DemoCreateSchema,
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_example:demo:create"]))],
@@ -88,7 +103,12 @@ async def create_obj_controller(
     return SuccessResponse(data=result_dict, msg="创建示例成功")
 
 
-@DemoRouter.put("/update/{id}", summary="修改示例", description="修改示例")
+@DemoRouter.put(
+    "/update/{id}",
+    summary="修改示例",
+    description="修改示例",
+    response_model=ResponseSchema[DemoOutSchema],
+)
 async def update_obj_controller(
     data: DemoUpdateSchema,
     id: Annotated[int, Path(description="示例ID")],
@@ -110,7 +130,12 @@ async def update_obj_controller(
     return SuccessResponse(data=result_dict, msg="修改示例成功")
 
 
-@DemoRouter.delete("/delete", summary="删除示例", description="删除示例")
+@DemoRouter.delete(
+    "/delete",
+    summary="删除示例",
+    description="删除示例",
+    response_model=ResponseSchema[None],
+)
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_example:demo:delete"]))],
@@ -134,6 +159,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改示例状态",
     description="批量修改示例状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,
@@ -154,7 +180,11 @@ async def batch_set_available_obj_controller(
     return SuccessResponse(msg="批量修改示例状态成功")
 
 
-@DemoRouter.post("/export", summary="导出示例", description="导出示例")
+@DemoRouter.post(
+    "/export",
+    summary="导出示例",
+    description="导出示例",
+)
 async def export_obj_list_controller(
     search: Annotated[DemoQueryParam, Depends()],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_example:demo:export"]))],
@@ -180,7 +210,12 @@ async def export_obj_list_controller(
     )
 
 
-@DemoRouter.post("/import", summary="导入示例", description="导入示例")
+@DemoRouter.post(
+    "/import",
+    summary="导入示例",
+    description="导入示例",
+    response_model=ResponseSchema[str],
+)
 async def import_obj_list_controller(
     file: UploadFile,
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_example:demo:import"]))],

@@ -3,6 +3,7 @@ from typing import Literal
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema
 from app.core.validator import DateTimeStr, menu_request_validator
 
@@ -116,28 +117,28 @@ class MenuQueryParam:
         updated_id: int | None = Query(None, description="更新人"),
     ) -> None:
         # 模糊查询字段
-        self.name = ("like", name)
-        self.route_path = ("like", route_path)
-        self.component_path = ("like", component_path)
-        self.permission = ("like", permission)
+        self.name = (QueueEnum.like.value, name)
+        self.route_path = (QueueEnum.like.value, route_path)
+        self.component_path = (QueueEnum.like.value, component_path)
+        self.permission = (QueueEnum.like.value, permission)
         # 精确查询字段
         self.type = type
         # 模糊查询字段
         if description:
-            self.description = ("like", description)
+            self.description = (QueueEnum.like.value, description)
 
         # 精确查询字段
         if status:
-            self.status = ("eq", status)
+            self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))
 
         # 关联查询字段
         if created_id:
-            self.created_id = ("eq", created_id)
+            self.created_id = (QueueEnum.eq.value, created_id)
         if updated_id:
-            self.updated_id = ("eq", updated_id)
+            self.updated_id = (QueueEnum.eq.value, updated_id)

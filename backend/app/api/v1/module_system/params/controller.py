@@ -6,7 +6,7 @@ from redis.asyncio.client import Redis
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission, redis_getter
 from app.core.logger import log
@@ -23,7 +23,7 @@ ParamsRouter = APIRouter(route_class=OperationLogRoute, prefix="/param", tags=["
     "/detail/{id}",
     summary="获取参数详情",
     description="获取参数详情",
-    response_model=ParamsOutSchema,
+    response_model=ResponseSchema[ParamsOutSchema],
 )
 async def get_type_detail_controller(
     id: Annotated[int, Path(description="参数ID")],
@@ -48,7 +48,7 @@ async def get_type_detail_controller(
     "/key/{config_key}",
     summary="根据配置键获取参数详情",
     description="根据配置键获取参数详情",
-    response_model=ParamsOutSchema,
+    response_model=ResponseSchema[ParamsOutSchema],
 )
 async def get_obj_by_key_controller(
     config_key: Annotated[str, Path(description="配置键")],
@@ -73,7 +73,7 @@ async def get_obj_by_key_controller(
     "/value/{config_key}",
     summary="根据配置键获取参数值",
     description="根据配置键获取参数值",
-    response_model=ParamsOutSchema,
+    response_model=ResponseSchema[ParamsOutSchema],
 )
 async def get_config_value_by_key_controller(
     config_key: Annotated[str, Path(description="配置键")],
@@ -100,7 +100,7 @@ async def get_config_value_by_key_controller(
     "/list",
     summary="获取参数列表",
     description="获取参数列表",
-    response_model=list[ParamsOutSchema],
+    response_model=ResponseSchema[list[ParamsOutSchema]],
 )
 async def get_obj_list_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_system:param:query"]))],
@@ -134,7 +134,7 @@ async def get_obj_list_controller(
     "/create",
     summary="创建参数",
     description="创建参数",
-    response_model=ParamsOutSchema,
+    response_model=ResponseSchema[ParamsOutSchema],
 )
 async def create_obj_controller(
     data: ParamsCreateSchema,
@@ -161,7 +161,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改参数",
     description="修改参数",
-    response_model=ParamsOutSchema,
+    response_model=ResponseSchema[ParamsOutSchema],
 )
 async def update_objs_controller(
     data: ParamsUpdateSchema,
@@ -190,7 +190,7 @@ async def update_objs_controller(
     "/delete",
     summary="删除参数",
     description="删除参数",
-    response_model=ParamsOutSchema,
+    response_model=ResponseSchema[ParamsOutSchema],
 )
 async def delete_obj_controller(
     redis: Annotated[Redis, Depends(redis_getter)],
@@ -217,6 +217,7 @@ async def delete_obj_controller(
     "/export",
     summary="导出参数",
     description="导出参数",
+    response_model=ResponseSchema[None],
 )
 async def export_obj_list_controller(
     search: Annotated[ParamsQueryParam, Depends()],
@@ -247,6 +248,7 @@ async def export_obj_list_controller(
     "/upload",
     summary="上传文件",
     dependencies=[Depends(AuthPermission(["module_system:param:upload"]))],
+    response_model=ResponseSchema[None],
 )
 async def upload_file_controller(file: UploadFile, request: Request) -> JSONResponse:
     """
@@ -268,7 +270,7 @@ async def upload_file_controller(file: UploadFile, request: Request) -> JSONResp
     "/info",
     summary="获取初始化缓存参数",
     description="获取初始化缓存参数",
-    response_model=list[ParamsOutSchema],
+    response_model=ResponseSchema[list[ParamsOutSchema]],
 )
 async def get_init_obj_controller(
     redis: Annotated[Redis, Depends(redis_getter)],

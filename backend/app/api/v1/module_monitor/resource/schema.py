@@ -10,6 +10,8 @@ from pydantic import (
     model_validator,
 )
 
+from app.common.enums import QueueEnum
+
 
 class ResourceItemSchema(BaseModel):
     """资源项目模型"""
@@ -157,7 +159,7 @@ class ResourceSearchQueryParam:
     ) -> None:
 
         # 模糊查询字段
-        self.name = ("like", name) if name else None
+        self.name = (QueueEnum.like.value, name) if name else None
 
         # 精确查询字段
-        self.path = path
+        self.path = (QueueEnum.eq.value, path) if path else None

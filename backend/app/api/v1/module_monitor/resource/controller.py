@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, Form, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse, UploadFileResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
@@ -27,6 +27,7 @@ ResourceRouter = APIRouter(route_class=OperationLogRoute, prefix="/resource", ta
     "/list",
     summary="获取目录列表",
     description="获取指定目录下的文件和子目录列表",
+    response_model=ResponseSchema[list[dict]],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:query"]))],
 )
 async def get_directory_list_controller(
@@ -64,6 +65,7 @@ async def get_directory_list_controller(
     "/upload",
     summary="上传文件",
     description="上传文件到指定目录",
+    response_model=ResponseSchema[dict],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:upload"]))],
 )
 async def upload_file_controller(
@@ -118,8 +120,8 @@ async def download_file_controller(
     filename = os.path.basename(file_path)
 
     log.info(f"下载文件成功: {filename}")
-    return FileResponse(
-        path=file_path,
+    return UploadFileResponse(
+        file_path=file_path,
         filename=filename,
         media_type="application/octet-stream",
     )
@@ -129,6 +131,7 @@ async def download_file_controller(
     "/delete",
     summary="删除文件",
     description="删除指定文件或目录",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:delete"]))],
 )
 async def delete_files_controller(
@@ -152,6 +155,7 @@ async def delete_files_controller(
     "/move",
     summary="移动文件",
     description="移动文件或目录",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:move"]))],
 )
 async def move_file_controller(data: ResourceMoveSchema) -> JSONResponse:
@@ -173,6 +177,7 @@ async def move_file_controller(data: ResourceMoveSchema) -> JSONResponse:
     "/copy",
     summary="复制文件",
     description="复制文件或目录",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:copy"]))],
 )
 async def copy_file_controller(data: ResourceCopySchema) -> JSONResponse:
@@ -194,6 +199,7 @@ async def copy_file_controller(data: ResourceCopySchema) -> JSONResponse:
     "/rename",
     summary="重命名文件",
     description="重命名文件或目录",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:rename"]))],
 )
 async def rename_file_controller(data: ResourceRenameSchema) -> JSONResponse:
@@ -215,6 +221,7 @@ async def rename_file_controller(data: ResourceRenameSchema) -> JSONResponse:
     "/create-dir",
     summary="创建目录",
     description="在指定路径创建新目录",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:create_dir"]))],
 )
 async def create_directory_controller(
@@ -238,6 +245,7 @@ async def create_directory_controller(
     "/export",
     summary="导出资源列表",
     description="导出资源列表",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_monitor:resource:export"]))],
 )
 async def export_resource_list_controller(

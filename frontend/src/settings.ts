@@ -49,6 +49,8 @@ export const defaultSettings: AppSettings = {
   aiEnabled: false,
   /** 是否开启灰色模式 */
   grayMode: false,
+  /** 页面切换动画 */
+  pageSwitchingAnimation: "fade-slide",
 };
 
 // 主题色预设 - 现代化配色方案

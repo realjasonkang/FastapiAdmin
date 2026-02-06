@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema, UserBySchema
 from app.core.validator import DateTimeStr
 
@@ -72,15 +73,15 @@ class ApplicationQueryParam:
         updated_id: int | None = Query(None, description="更新人"),
     ) -> None:
         # 模糊查询字段
-        self.name = ("like", name) if name else None
+        self.name = (QueueEnum.like.value, name)
 
         # 精确查询字段
-        self.status = status
-        self.created_id = created_id
-        self.updated_id = updated_id
+        self.status = (QueueEnum.eq.value, status)
+        self.created_id = (QueueEnum.eq.value, created_id)
+        self.updated_id = (QueueEnum.eq.value, updated_id)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))

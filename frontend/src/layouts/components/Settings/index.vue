@@ -141,13 +141,25 @@
         </div>
 
         <div class="flex-x-between">
-          <span class="text-xs">灰色模式</span>
+          <span class="text-xs">{{ t("settings.grayMode") }}</span>
           <el-switch v-model="settingsStore.grayMode" />
         </div>
 
         <div class="flex-x-between">
-          <span class="text-xs">AI 助手</span>
+          <span class="text-xs">{{ t("settings.userEnableAi") }}</span>
           <el-switch v-model="settingsStore.userEnableAi" />
+        </div>
+
+        <div class="flex-x-between">
+          <span class="text-xs">{{ t("settings.pageSwitchingAnimation") }}</span>
+          <el-select v-model="settingsStore.pageSwitchingAnimation" style="width: 150px">
+            <el-option
+              v-for="(item, key) in pageSwitchingAnimationOptions"
+              :key
+              :label="t(`settings.${item.value}`)"
+              :value="item.value"
+            />
+          </el-select>
         </div>
 
         <!-- 工具控制 -->
@@ -228,13 +240,21 @@
 import { DocumentCopy, RefreshLeft, Check } from "@element-plus/icons-vue";
 
 const { t } = useI18n();
-import { LayoutMode, SidebarColor, ThemeMode, DeviceEnum } from "@/enums";
+import {
+  LayoutMode,
+  SidebarColor,
+  ThemeMode,
+  DeviceEnum,
+  PageSwitchingAnimationOptions,
+} from "@/enums";
 import { useSettingsStore, useAppStore } from "@/store";
 import { themeColorPresets } from "@/settings";
 
 const appStore = useAppStore();
 const drawerSize = computed(() => (appStore.device === DeviceEnum.DESKTOP ? "400px" : "90%"));
 
+// 页面切换动画选项
+const pageSwitchingAnimationOptions: Record<string, OptionType> = PageSwitchingAnimationOptions;
 // 按钮图标
 const copyIcon = markRaw(DocumentCopy);
 const resetIcon = markRaw(RefreshLeft);

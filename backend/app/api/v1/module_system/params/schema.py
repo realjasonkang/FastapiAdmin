@@ -1,6 +1,7 @@
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema
 from app.core.validator import DateTimeStr
 
@@ -59,19 +60,19 @@ class ParamsQueryParam:
     ) -> None:
         # 模糊查询字段
         # 模糊查询字段
-        self.config_name = ("like", config_name)
-        self.config_key = ("like", config_key)
+        self.config_name = (QueueEnum.like.value, config_name)
+        self.config_key = (QueueEnum.like.value, config_key)
         # 精确查询字段
         self.config_type = config_type
         if description:
-            self.description = ("like", description)
+            self.description = (QueueEnum.like.value, description)
 
         # 精确查询字段
         if status:
-            self.status = ("eq", status)
+            self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))

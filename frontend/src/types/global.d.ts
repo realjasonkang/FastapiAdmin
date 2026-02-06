@@ -105,6 +105,8 @@ declare global {
     aiEnabled: boolean;
     /** 是否开启灰色模式 */
     grayMode: boolean;
+    /** 页面切换动画 */
+    pageSwitchingAnimation: string;
   }
 
   /**

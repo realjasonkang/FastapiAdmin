@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import ErrorResponse, StreamResponse, SuccessResponse
+from app.common.response import ErrorResponse, ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
@@ -14,7 +14,9 @@ from app.utils.common_util import bytes2file_response
 
 from .schema import (
     JobCreateSchema,
+    JobLogOutSchema,
     JobLogQueryParam,
+    JobOutSchema,
     JobQueryParam,
     JobUpdateSchema,
 )
@@ -24,7 +26,12 @@ from .tools.ap_scheduler import SchedulerUtil
 JobRouter = APIRouter(route_class=OperationLogRoute, prefix="/job", tags=["定时任务"])
 
 
-@JobRouter.get("/detail/{id}", summary="获取定时任务详情", description="获取定时任务详情")
+@JobRouter.get(
+    "/detail/{id}",
+    summary="获取定时任务详情",
+    description="获取定时任务详情",
+    response_model=ResponseSchema[JobOutSchema],
+)
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="定时任务ID")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:detail"]))],
@@ -44,7 +51,12 @@ async def get_obj_detail_controller(
     return SuccessResponse(data=result_dict, msg="获取定时任务详情成功")
 
 
-@JobRouter.get("/list", summary="查询定时任务", description="查询定时任务")
+@JobRouter.get(
+    "/list",
+    summary="查询定时任务",
+    description="查询定时任务",
+    response_model=ResponseSchema[list[JobOutSchema]],
+)
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[JobQueryParam, Depends()],
@@ -73,7 +85,12 @@ async def get_obj_list_controller(
     return SuccessResponse(data=result_dict, msg="查询定时任务列表成功")
 
 
-@JobRouter.post("/create", summary="创建定时任务", description="创建定时任务")
+@JobRouter.post(
+    "/create",
+    summary="创建定时任务",
+    description="创建定时任务",
+    response_model=ResponseSchema[JobOutSchema],
+)
 async def create_obj_controller(
     data: JobCreateSchema,
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:create"]))],
@@ -93,7 +110,12 @@ async def create_obj_controller(
     return SuccessResponse(data=result_dict, msg="创建定时任务成功")
 
 
-@JobRouter.put("/update/{id}", summary="修改定时任务", description="修改定时任务")
+@JobRouter.put(
+    "/update/{id}",
+    summary="修改定时任务",
+    description="修改定时任务",
+    response_model=ResponseSchema[JobOutSchema],
+)
 async def update_obj_controller(
     data: JobUpdateSchema,
     id: Annotated[int, Path(description="定时任务ID")],
@@ -115,7 +137,12 @@ async def update_obj_controller(
     return SuccessResponse(data=result_dict, msg="修改定时任务成功")
 
 
-@JobRouter.delete("/delete", summary="删除定时任务", description="删除定时任务")
+@JobRouter.delete(
+    "/delete",
+    summary="删除定时任务",
+    description="删除定时任务",
+    response_model=ResponseSchema[None],
+)
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:delete"]))],
@@ -135,7 +162,11 @@ async def delete_obj_controller(
     return SuccessResponse(msg="删除定时任务成功")
 
 
-@JobRouter.post("/export", summary="导出定时任务", description="导出定时任务")
+@JobRouter.post(
+    "/export",
+    summary="导出定时任务",
+    description="导出定时任务",
+)
 async def export_obj_list_controller(
     search: Annotated[JobQueryParam, Depends()],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:export"]))],
@@ -161,7 +192,12 @@ async def export_obj_list_controller(
     )
 
 
-@JobRouter.delete("/clear", summary="清空定时任务日志", description="清空定时任务日志")
+@JobRouter.delete(
+    "/clear",
+    summary="清空定时任务日志",
+    description="清空定时任务日志",
+    response_model=ResponseSchema[None],
+)
 async def clear_obj_log_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:delete"]))],
 ) -> JSONResponse:
@@ -172,17 +208,18 @@ async def clear_obj_log_controller(
     - auth (AuthSchema): 认证信息模型
 
     返回:
-    - JSONResponse: 包含清空定时任务结果的JSON响应
+    - JSONResponse: 包含清空定时任务日志结果的JSON响应
     """
     await JobService.clear_job_service(auth=auth)
-    log.info("清空定时任务成功")
-    return SuccessResponse(msg="清空定时任务成功")
+    log.info("清空定时任务日志成功")
+    return SuccessResponse(msg="清空定时任务日志成功")
 
 
 @JobRouter.put(
     "/option",
     summary="暂停/恢复/重启定时任务",
     description="暂停/恢复/重启定时任务",
+    response_model=ResponseSchema[None],
 )
 async def option_obj_controller(
     id: Annotated[int, Body(description="定时任务ID")],
@@ -209,6 +246,7 @@ async def option_obj_controller(
     "/log",
     summary="获取定时任务日志",
     description="获取定时任务日志",
+    response_model=ResponseSchema[list[JobLogOutSchema]],
     dependencies=[Depends(AuthPermission(["module_application:job:query"]))],
 )
 async def get_job_log_controller():
@@ -245,6 +283,7 @@ async def get_job_log_controller():
     "/log/detail/{id}",
     summary="获取定时任务日志详情",
     description="获取定时任务日志详情",
+    response_model=ResponseSchema[JobLogOutSchema],
 )
 async def get_job_log_detail_controller(
     id: Annotated[int, Path(description="定时任务日志ID")],
@@ -265,7 +304,12 @@ async def get_job_log_detail_controller(
     return SuccessResponse(data=result_dict, msg="获取定时任务日志详情成功")
 
 
-@JobRouter.get("/log/list", summary="查询定时任务日志", description="查询定时任务日志")
+@JobRouter.get(
+    "/log/list",
+    summary="查询定时任务日志",
+    description="查询定时任务日志",
+    response_model=ResponseSchema[list[JobLogOutSchema]],
+)
 async def get_job_log_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[JobLogQueryParam, Depends()],
@@ -295,7 +339,12 @@ async def get_job_log_list_controller(
     return SuccessResponse(data=result_dict, msg="查询定时任务日志列表成功")
 
 
-@JobRouter.delete("/log/delete", summary="删除定时任务日志", description="删除定时任务日志")
+@JobRouter.delete(
+    "/log/delete",
+    summary="删除定时任务日志",
+    description="删除定时任务日志",
+    response_model=ResponseSchema[None],
+)
 async def delete_job_log_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:delete"]))],
@@ -315,7 +364,12 @@ async def delete_job_log_controller(
     return SuccessResponse(msg="删除定时任务日志成功")
 
 
-@JobRouter.delete("/log/clear", summary="清空定时任务日志", description="清空定时任务日志")
+@JobRouter.delete(
+    "/log/clear",
+    summary="清空定时任务日志",
+    description="清空定时任务日志",
+    response_model=ResponseSchema[None],
+)
 async def clear_job_log_controller(
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:delete"]))],
 ) -> JSONResponse:
@@ -333,7 +387,11 @@ async def clear_job_log_controller(
     return SuccessResponse(msg="清空定时任务日志成功")
 
 
-@JobRouter.post("/log/export", summary="导出定时任务日志", description="导出定时任务日志")
+@JobRouter.post(
+    "/log/export",
+    summary="导出定时任务日志",
+    description="导出定时任务日志",
+)
 async def export_job_log_list_controller(
     search: Annotated[JobLogQueryParam, Depends()],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:export"]))],
@@ -363,17 +421,17 @@ async def export_job_log_list_controller(
     "/run/{id}",
     summary="立即执行定时任务",
     description="立即执行指定的定时任务",
+    response_model=ResponseSchema[None],
+    dependencies=[Depends(AuthPermission(["module_application:job:update"]))],
 )
 async def run_job_now_controller(
     id: Annotated[int, Path(description="定时任务ID")],
-    auth: Annotated[AuthSchema, Depends(AuthPermission(["module_application:job:update"]))],
 ) -> JSONResponse:
     """
     立即执行定时任务
 
     参数:
     - id (int): 定时任务ID
-    - auth (AuthSchema): 认证信息模型
 
     返回:
     - JSONResponse: 包含操作结果的JSON响应

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from redis.asyncio.client import Redis
 
 from app.common.request import PaginationService
-from app.common.response import ErrorResponse, SuccessResponse
+from app.common.response import ErrorResponse, ResponseSchema, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission, redis_getter
 from app.core.logger import log
@@ -22,7 +22,7 @@ OnlineRouter = APIRouter(route_class=OperationLogRoute, prefix="/online", tags=[
     dependencies=[Depends(AuthPermission(["module_monitor:online:query"]))],
     summary="获取在线用户列表",
     description="获取在线用户列表",
-    response_model=list[OnlineOutSchema],
+    response_model=ResponseSchema[list[OnlineOutSchema]],
 )
 async def get_online_list_controller(
     redis: Annotated[Redis, Depends(redis_getter)],
@@ -56,6 +56,7 @@ async def get_online_list_controller(
     dependencies=[Depends(AuthPermission(["module_monitor:online:delete"]))],
     summary="强制下线",
     description="强制下线",
+    response_model=ResponseSchema[None],
 )
 async def delete_online_controller(
     session_id: Annotated[str, Body(description="会话编号")],
@@ -84,6 +85,7 @@ async def delete_online_controller(
     dependencies=[Depends(AuthPermission(["module_monitor:online:delete"]))],
     summary="清除所有在线用户",
     description="清除所有在线用户",
+    response_model=ResponseSchema[None],
 )
 async def clear_online_controller(
     redis: Annotated[Redis, Depends(redis_getter)],

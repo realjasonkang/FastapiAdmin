@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
-from app.common.response import SuccessResponse
+from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
@@ -20,7 +20,7 @@ DeptRouter = APIRouter(route_class=OperationLogRoute, prefix="/dept", tags=["部
     "/tree",
     summary="查询部门树",
     description="查询部门树",
-    response_model=list[DeptOutSchema],
+    response_model=ResponseSchema[list[DeptOutSchema]],
 )
 async def get_dept_tree_controller(
     search: Annotated[DeptQueryParam, Depends()],
@@ -51,7 +51,7 @@ async def get_dept_tree_controller(
     "/detail/{id}",
     summary="查询部门详情",
     description="查询部门详情",
-    response_model=DeptOutSchema,
+    response_model=ResponseSchema[DeptOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="部门ID")],
@@ -79,7 +79,7 @@ async def get_obj_detail_controller(
     "/create",
     summary="创建部门",
     description="创建部门",
-    response_model=DeptOutSchema,
+    response_model=ResponseSchema[DeptOutSchema],
 )
 async def create_obj_controller(
     data: DeptCreateSchema,
@@ -107,7 +107,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改部门",
     description="修改部门",
-    response_model=DeptOutSchema,
+    response_model=ResponseSchema[DeptOutSchema],
 )
 async def update_obj_controller(
     data: DeptUpdateSchema,
@@ -137,6 +137,7 @@ async def update_obj_controller(
     "/delete",
     summary="删除部门",
     description="删除部门",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -164,6 +165,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改部门状态",
     description="批量修改部门状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,

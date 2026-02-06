@@ -627,13 +627,13 @@ class GenConstant:
             "int": "int",
             "integer": "int",
             "bigint": "int",
-            
+
             # MySQL 浮点类型
             "float": "float",
             "double": "float",
             "decimal": "Decimal",
             "numeric": "Decimal",
-            
+
             # MySQL 字符串类型
             "char": "str",
             "varchar": "str",
@@ -641,7 +641,7 @@ class GenConstant:
             "text": "str",
             "mediumtext": "str",
             "longtext": "str",
-            
+
             # MySQL 二进制类型
             "binary": "bytes",
             "varbinary": "bytes",
@@ -649,20 +649,20 @@ class GenConstant:
             "blob": "bytes",
             "mediumblob": "bytes",
             "longblob": "bytes",
-            
+
             # MySQL 日期时间类型
             "date": "date",
             "time": "time",
             "datetime": "datetime",
             "timestamp": "datetime",
             "year": "int",
-            
+
             # MySQL 其他类型
             "json": "dict",
             "enum": "str",
             "set": "str",
             "bit": "int",
-            
+
             # MySQL 空间数据类型
             "geometry": "bytes",
             "linestring": "bytes",
@@ -670,24 +670,24 @@ class GenConstant:
             "multilinestring": "bytes",
             "multipolygon": "bytes",
             "geometrycollection": "bytes",
-            
+
             # PostgreSQL 整数类型
             "int2": "int",
             "int4": "int",
             "int8": "int",
-            
+
             # PostgreSQL 浮点类型
             "real": "float",
             "double precision": "float",
             "float8": "float",
-            
+
             # PostgreSQL 字符串类型
             "character": "str",
             "character varying": "str",
-            
+
             # PostgreSQL 二进制类型
             "bytea": "bytes",
-            
+
             # PostgreSQL 日期时间类型
             "time with time zone": "time",
             "timetz": "time",
@@ -696,20 +696,20 @@ class GenConstant:
             "timestamp with time zone": "datetime",
             "timestamp without time zone": "datetime",
             "interval": "timedelta",
-            
+
             # PostgreSQL 布尔类型
             "boolean": "bool",
             "bool": "bool",
-            
+
             # PostgreSQL JSON类型
             "jsonb": "dict",
-            
+
             # PostgreSQL 其他类型
             "uuid": "str",
             "inet": "str",
             "cidr": "str",
             "macaddr": "str",
-            
+
             # PostgreSQL 几何类型（覆盖MySQL的映射）
             "point": "list",
             "line": "list",
@@ -718,21 +718,21 @@ class GenConstant:
             "path": "list",
             "polygon": "list",
             "circle": "list",
-            
+
             # PostgreSQL 位类型
             "bit varying": "int",
             "varbit": "int",
-            
+
             # PostgreSQL 文本搜索类型
             "tsvector": "str",
             "tsquery": "str",
-            
+
             # PostgreSQL XML类型
             "xml": "str",
-            
+
             # PostgreSQL 数组类型
             "array": "list",
-            
+
             # PostgreSQL 范围类型
             "range": "list",
             "int4range": "list",
@@ -740,10 +740,10 @@ class GenConstant:
             "tsrange": "list",
             "tstzrange": "list",
             "daterange": "list",
-            
+
             # PostgreSQL 货币类型
             "money": "Decimal",
-            
+
             # PostgreSQL 对象标识符类型
             "oid": "int",
             "regproc": "str",
@@ -751,11 +751,11 @@ class GenConstant:
             "regtype": "str",
             "regrole": "str",
             "regnamespace": "str",
-            
+
             # PostgreSQL 向量类型
             "int2vector": "list",
             "oidvector": "list",
-            
+
             # PostgreSQL 其他内部类型
             "pg_lsn": "int",
             "txid_snapshot": "str",

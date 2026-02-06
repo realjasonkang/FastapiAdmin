@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import SuccessResponse
+from app.common.response import ResponseSchema, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission
@@ -14,6 +14,7 @@ from app.core.router_class import OperationLogRoute
 
 from .schema import (
     ApplicationCreateSchema,
+    ApplicationOutSchema,
     ApplicationQueryParam,
     ApplicationUpdateSchema,
 )
@@ -22,7 +23,12 @@ from .service import ApplicationService
 MyAppRouter = APIRouter(route_class=OperationLogRoute, prefix="/myapp", tags=["应用管理"])
 
 
-@MyAppRouter.get("/detail/{id}", summary="获取应用详情", description="获取应用详情")
+@MyAppRouter.get(
+    "/detail/{id}",
+    summary="获取应用详情",
+    description="获取应用详情",
+    response_model=ResponseSchema[ApplicationOutSchema],
+)
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="应用ID")],
     auth: Annotated[
@@ -45,7 +51,12 @@ async def get_obj_detail_controller(
     return SuccessResponse(data=result_dict, msg="获取应用详情成功")
 
 
-@MyAppRouter.get("/list", summary="查询应用列表", description="查询应用列表")
+@MyAppRouter.get(
+    "/list",
+    summary="查询应用列表",
+    description="查询应用列表",
+    response_model=ResponseSchema[list[ApplicationOutSchema]],
+)
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[ApplicationQueryParam, Depends()],
@@ -74,7 +85,12 @@ async def get_obj_list_controller(
     return SuccessResponse(data=result_dict, msg="查询应用列表成功")
 
 
-@MyAppRouter.post("/create", summary="创建应用", description="创建应用")
+@MyAppRouter.post(
+    "/create",
+    summary="创建应用",
+    description="创建应用",
+    response_model=ResponseSchema[ApplicationOutSchema],
+)
 async def create_obj_controller(
     data: ApplicationCreateSchema,
     auth: Annotated[
@@ -97,7 +113,12 @@ async def create_obj_controller(
     return SuccessResponse(data=result_dict, msg="创建应用成功")
 
 
-@MyAppRouter.put("/update/{id}", summary="修改应用", description="修改应用")
+@MyAppRouter.put(
+    "/update/{id}",
+    summary="修改应用",
+    description="修改应用",
+    response_model=ResponseSchema[ApplicationOutSchema],
+)
 async def update_obj_controller(
     data: ApplicationUpdateSchema,
     id: Annotated[int, Path(description="应用ID")],
@@ -122,7 +143,12 @@ async def update_obj_controller(
     return SuccessResponse(data=result_dict, msg="修改应用成功")
 
 
-@MyAppRouter.delete("/delete", summary="删除应用", description="删除应用")
+@MyAppRouter.delete(
+    "/delete",
+    summary="删除应用",
+    description="删除应用",
+    response_model=ResponseSchema[None],
+)
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
     auth: Annotated[
@@ -149,6 +175,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改应用状态",
     description="批量修改应用状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,

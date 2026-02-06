@@ -226,7 +226,7 @@ class Jinja2TemplateUtil:
                     has_time_import = True
             elif column.python_type == GenConstant.TYPE_DECIMAL:
                 import_list.add("from decimal import Decimal")
-            
+
             # 检查是否需要DateTimeStr、DateStr、TimeStr
             if column.column_name == "created_time" or column.column_name == "updated_time":
                 has_datetime_str = True
@@ -252,7 +252,7 @@ class Jinja2TemplateUtil:
             import_list.add("from datetime import date")
         if has_time_import:
             import_list.add("from datetime import time")
-        
+
         # 添加validator导入
         if has_datetime_str:
             import_list.add("from app.core.validator import DateTimeStr")
@@ -317,7 +317,7 @@ class Jinja2TemplateUtil:
                     # 处理Decimal类型的导入
                     elif sub_column.python_type == GenConstant.TYPE_DECIMAL:
                         import_list.add("from decimal import Decimal")
-        
+
         # 添加datetime导入
         if has_datetime_import:
             import_list.add("from datetime import datetime")
@@ -325,7 +325,7 @@ class Jinja2TemplateUtil:
             import_list.add("from datetime import date")
         if has_time_import:
             import_list.add("from datetime import time")
-        
+
         return cls.merge_same_imports(list(import_list), "from sqlalchemy import")
 
     @classmethod
@@ -343,16 +343,16 @@ class Jinja2TemplateUtil:
         collate_pattern = re.compile(r'\s+COLLATE\s+', re.IGNORECASE)
         if collate_pattern.search(column_type):
             column_type = collate_pattern.split(column_type)[0].strip()
-        
+
         # 移除 UNSIGNED 标记（不区分大小写）
         unsigned_pattern = re.compile(r'\s+UNSIGNED', re.IGNORECASE)
         if unsigned_pattern.search(column_type):
             column_type = unsigned_pattern.sub('', column_type).strip()
-        
+
         # 处理PostgreSQL数组类型（如 integer[], text[]）
         if "[]" in column_type:
             return "array"
-        
+
         # 提取基本类型
         if "(" in column_type:
             return column_type.split("(")[0]

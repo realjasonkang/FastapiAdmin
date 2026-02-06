@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.base_schema import BatchSetAvailable
 from app.core.dependencies import AuthPermission, db_getter, get_current_user
@@ -35,7 +35,7 @@ UserRouter = APIRouter(route_class=OperationLogRoute, prefix="/user", tags=["用
     "/current/info",
     summary="查询当前用户信息",
     description="查询当前用户信息",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def get_current_user_info_controller(
     auth: Annotated[AuthSchema, Depends(get_current_user)],
@@ -58,7 +58,7 @@ async def get_current_user_info_controller(
     "/current/avatar/upload",
     summary="上传当前用户头像",
     dependencies=[Depends(get_current_user)],
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def user_avatar_upload_controller(file: UploadFile, request: Request) -> JSONResponse:
     """
@@ -80,7 +80,7 @@ async def user_avatar_upload_controller(file: UploadFile, request: Request) -> J
     "/current/info/update",
     summary="更新当前用户基本信息",
     description="更新当前用户基本信息",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def update_current_user_info_controller(
     data: CurrentUserUpdateSchema,
@@ -105,7 +105,7 @@ async def update_current_user_info_controller(
     "/current/password/change",
     summary="修改当前用户密码",
     description="修改当前用户密码",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def change_current_user_password_controller(
     data: UserChangePasswordSchema,
@@ -130,7 +130,7 @@ async def change_current_user_password_controller(
     "/reset/password",
     summary="重置密码",
     description="重置密码",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def reset_password_controller(
     data: ResetPasswordSchema,
@@ -155,7 +155,7 @@ async def reset_password_controller(
     "/register",
     summary="注册用户",
     description="注册用户",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def register_user_controller(
     data: UserRegisterSchema,
@@ -181,7 +181,7 @@ async def register_user_controller(
     "/forget/password",
     summary="忘记密码",
     description="忘记密码",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def forget_password_controller(
     data: UserForgetPasswordSchema,
@@ -207,7 +207,7 @@ async def forget_password_controller(
     "/list",
     summary="查询用户",
     description="查询用户",
-    response_model=list[UserOutSchema],
+    response_model=ResponseSchema[list[UserOutSchema]],
 )
 async def get_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -241,7 +241,7 @@ async def get_obj_list_controller(
     "/detail/{id}",
     summary="查询用户详情",
     description="查询用户详情",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def get_obj_detail_controller(
     id: Annotated[int, Path(description="用户ID")],
@@ -266,7 +266,7 @@ async def get_obj_detail_controller(
     "/create",
     summary="创建用户",
     description="创建用户",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def create_obj_controller(
     data: UserCreateSchema,
@@ -295,7 +295,7 @@ async def create_obj_controller(
     "/update/{id}",
     summary="修改用户",
     description="修改用户",
-    response_model=UserOutSchema,
+    response_model=ResponseSchema[UserOutSchema],
 )
 async def update_obj_controller(
     data: UserUpdateSchema,
@@ -322,6 +322,7 @@ async def update_obj_controller(
     "/delete",
     summary="删除用户",
     description="删除用户",
+    response_model=ResponseSchema[None],
 )
 async def delete_obj_controller(
     ids: Annotated[list[int], Body(description="ID列表")],
@@ -346,6 +347,7 @@ async def delete_obj_controller(
     "/available/setting",
     summary="批量修改用户状态",
     description="批量修改用户状态",
+    response_model=ResponseSchema[None],
 )
 async def batch_set_available_obj_controller(
     data: BatchSetAvailable,
@@ -370,6 +372,7 @@ async def batch_set_available_obj_controller(
     "/import/template",
     summary="获取用户导入模板",
     description="获取用户导入模板",
+    response_model=ResponseSchema[None],
     dependencies=[Depends(AuthPermission(["module_system:user:download"]))],
 )
 async def export_obj_template_controller() -> StreamingResponse:
@@ -392,7 +395,12 @@ async def export_obj_template_controller() -> StreamingResponse:
     )
 
 
-@UserRouter.post("/export", summary="导出用户", description="导出用户")
+@UserRouter.post(
+    "/export",
+    summary="导出用户",
+    description="导出用户",
+    response_model=ResponseSchema[None],
+)
 async def export_obj_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[UserQueryParam, Depends()],
@@ -422,7 +430,12 @@ async def export_obj_list_controller(
     )
 
 
-@UserRouter.post("/import/data", summary="导入用户", description="导入用户")
+@UserRouter.post(
+    "/import/data",
+    summary="导入用户",
+    description="导入用户",
+    response_model=ResponseSchema[None],
+)
 async def import_obj_list_controller(
     file: UploadFile,
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_system:user:import"]))],

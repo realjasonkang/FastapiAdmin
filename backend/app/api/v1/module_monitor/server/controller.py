@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from app.api.v1.module_monitor.server.schema import ServerMonitorSchema
-from app.common.response import SuccessResponse
+from app.common.response import ResponseSchema, SuccessResponse
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
 from app.core.router_class import OperationLogRoute
@@ -17,7 +17,7 @@ ServerRouter = APIRouter(route_class=OperationLogRoute, prefix="/server", tags=[
     summary="查询服务器监控信息",
     description="查询服务器监控信息",
     dependencies=[Depends(AuthPermission(["module_monitor:server:query"]))],
-    response_model=ServerMonitorSchema,
+    response_model=ResponseSchema[ServerMonitorSchema],
 )
 async def get_monitor_server_info_controller() -> JSONResponse:
     """

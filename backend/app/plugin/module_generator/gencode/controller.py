@@ -5,14 +5,14 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.common.request import PaginationService
-from app.common.response import StreamResponse, SuccessResponse
+from app.common.response import ResponseSchema, StreamResponse, SuccessResponse
 from app.core.base_params import PaginationQueryParam
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
 from app.core.router_class import OperationLogRoute
 from app.utils.common_util import bytes2file_response
 
-from .schema import GenTableQueryParam, GenTableSchema
+from .schema import GenDBTableSchema, GenTableOutSchema, GenTableQueryParam, GenTableSchema
 from .service import GenTableService
 
 GenRouter = APIRouter(route_class=OperationLogRoute, prefix="/gencode", tags=["代码生成模块"])
@@ -22,6 +22,7 @@ GenRouter = APIRouter(route_class=OperationLogRoute, prefix="/gencode", tags=["�
     "/list",
     summary="查询代码生成业务表列表",
     description="查询代码生成业务表列表",
+    response_model=ResponseSchema[list[GenTableOutSchema]],
 )
 async def gen_table_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
@@ -49,7 +50,12 @@ async def gen_table_list_controller(
     return SuccessResponse(data=result_dict, msg="获取代码生成业务表列表成功")
 
 
-@GenRouter.get("/db/list", summary="查询数据库表列表", description="查询数据库表列表")
+@GenRouter.get(
+    "/db/list",
+    summary="查询数据库表列表",
+    description="查询数据库表列表",
+    response_model=ResponseSchema[list[GenDBTableSchema]],
+)
 async def get_gen_db_table_list_controller(
     page: Annotated[PaginationQueryParam, Depends()],
     search: Annotated[GenTableQueryParam, Depends()],
@@ -76,7 +82,12 @@ async def get_gen_db_table_list_controller(
     return SuccessResponse(data=result_dict, msg="获取数据库表列表成功")
 
 
-@GenRouter.post("/import", summary="导入表结构", description="导入表结构")
+@GenRouter.post(
+    "/import",
+    summary="导入表结构",
+    description="导入表结构",
+    response_model=ResponseSchema[bool],
+)
 async def import_gen_table_controller(
     table_names: Annotated[list[str], Body(description="表名列表")],
     auth: Annotated[
@@ -106,6 +117,7 @@ async def import_gen_table_controller(
     "/detail/{table_id}",
     summary="获取业务表详细信息",
     description="获取业务表详细信息",
+    response_model=ResponseSchema[GenTableOutSchema],
 )
 async def gen_table_detail_controller(
     table_id: Annotated[int, Path(description="业务表ID")],
@@ -126,7 +138,12 @@ async def gen_table_detail_controller(
     return SuccessResponse(data=gen_table_detail_result, msg="获取业务表详细信息成功")
 
 
-@GenRouter.post("/create", summary="创建表结构", description="创建表结构")
+@GenRouter.post(
+    "/create",
+    summary="创建表结构",
+    description="创建表结构",
+    response_model=ResponseSchema[bool],
+)
 async def create_table_controller(
     sql: Annotated[str, Body(description="SQL语句，用于创建表结构")],
     auth: Annotated[
@@ -153,6 +170,7 @@ async def create_table_controller(
     "/update/{table_id}",
     summary="编辑业务表信息",
     description="编辑业务表信息",
+    response_model=ResponseSchema[GenTableOutSchema],
 )
 async def update_gen_table_controller(
     table_id: Annotated[int, Path(description="业务表ID")],
@@ -178,7 +196,12 @@ async def update_gen_table_controller(
     return SuccessResponse(data=result_dict, msg="编辑业务表信息成功")
 
 
-@GenRouter.delete("/delete", summary="删除业务表信息", description="删除业务表信息")
+@GenRouter.delete(
+    "/delete",
+    summary="删除业务表信息",
+    description="删除业务表信息",
+    response_model=ResponseSchema[None],
+)
 async def delete_gen_table_controller(
     ids: Annotated[list[int], Body(description="业务表ID列表")],
     auth: Annotated[
@@ -201,7 +224,11 @@ async def delete_gen_table_controller(
     return SuccessResponse(msg="删除业务表信息成功", data=result)
 
 
-@GenRouter.patch("/batch/output", summary="批量生成代码", description="批量生成代码")
+@GenRouter.patch(
+    "/batch/output",
+    summary="批量生成代码",
+    description="批量生成代码",
+)
 async def batch_gen_code_controller(
     table_names: Annotated[list[str], Body(description="表名列表")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_generator:gencode:patch"]))],
@@ -229,6 +256,7 @@ async def batch_gen_code_controller(
     "/output/{table_name}",
     summary="生成代码到指定路径",
     description="生成代码到指定路径",
+    response_model=ResponseSchema[bool],
 )
 async def gen_code_local_controller(
     table_name: Annotated[str, Path(description="表名")],
@@ -249,7 +277,12 @@ async def gen_code_local_controller(
     return SuccessResponse(msg="生成代码到指定路径成功", data=result)
 
 
-@GenRouter.get("/preview/{table_id}", summary="预览代码", description="预览代码")
+@GenRouter.get(
+    "/preview/{table_id}",
+    summary="预览代码",
+    description="预览代码",
+    response_model=ResponseSchema[dict],
+)
 async def preview_code_controller(
     table_id: Annotated[int, Path(description="业务表ID")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_generator:gencode:query"]))],
@@ -269,7 +302,12 @@ async def preview_code_controller(
     return SuccessResponse(data=preview_code_result, msg="预览代码成功")
 
 
-@GenRouter.post("/sync_db/{table_name}", summary="同步数据库", description="同步数据库")
+@GenRouter.post(
+    "/sync_db/{table_name}",
+    summary="同步数据库",
+    description="同步数据库",
+    response_model=ResponseSchema[None],
+)
 async def sync_db_controller(
     table_name: Annotated[str, Path(description="表名")],
     auth: Annotated[AuthSchema, Depends(AuthPermission(["module_generator:db:sync"]))],

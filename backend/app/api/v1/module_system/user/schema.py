@@ -12,6 +12,7 @@ from pydantic import (
 
 from app.api.v1.module_system.menu.schema import MenuOutSchema
 from app.api.v1.module_system.role.schema import RoleOutSchema
+from app.common.enums import QueueEnum
 from app.core.base_schema import BaseSchema, CommonSchema, UserBySchema
 from app.core.validator import DateTimeStr, email_validator, mobile_validator
 
@@ -191,19 +192,19 @@ class UserQueryParam:
     ) -> None:
 
         # 模糊查询字段
-        self.username = ("like", username)
-        self.name = ("like", name)
-        self.mobile = ("like", mobile)
-        self.email = ("like", email)
+        self.username = (QueueEnum.like.value, username)
+        self.name = (QueueEnum.like.value, name)
+        self.mobile = (QueueEnum.like.value, mobile)
+        self.email = (QueueEnum.like.value, email)
 
         # 精确查询字段
-        self.dept_id = dept_id
-        self.created_id = created_id
-        self.updated_id = updated_id
-        self.status = status
+        self.dept_id = (QueueEnum.eq.value, dept_id)
+        self.created_id = (QueueEnum.eq.value, created_id)
+        self.updated_id = (QueueEnum.eq.value, updated_id)
+        self.status = (QueueEnum.eq.value, status)
 
         # 时间范围查询
         if created_time and len(created_time) == 2:
-            self.created_time = ("between", (created_time[0], created_time[1]))
+            self.created_time = (QueueEnum.between.value, (created_time[0], created_time[1]))
         if updated_time and len(updated_time) == 2:
-            self.updated_time = ("between", (updated_time[0], updated_time[1]))
+            self.updated_time = (QueueEnum.between.value, (updated_time[0], updated_time[1]))

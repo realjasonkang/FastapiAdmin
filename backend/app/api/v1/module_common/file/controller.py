@@ -11,7 +11,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, JSONResponse
 
-from app.common.response import SuccessResponse, UploadFileResponse
+from app.common.response import ResponseSchema, SuccessResponse, UploadFileResponse
 from app.core.dependencies import AuthPermission
 from app.core.logger import log
 from app.core.router_class import OperationLogRoute
@@ -26,6 +26,7 @@ FileRouter = APIRouter(route_class=OperationLogRoute, prefix="/file", tags=["文
     "/upload",
     summary="上传文件",
     description="上传文件",
+    response_model=ResponseSchema[dict],
     dependencies=[Depends(AuthPermission(["module_common:file:upload"]))],
 )
 async def upload_controller(

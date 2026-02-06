@@ -1,20 +1,21 @@
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Generic
 
 from fastapi import status
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from pydantic.types import T
 from starlette.background import BackgroundTask
 
 from app.common.constant import RET
 
 
-class ResponseSchema(BaseModel):
+class ResponseSchema(BaseModel, Generic[T]):
     """响应模型"""
 
     code: int = Field(default=RET.OK.code, description="业务状态码")
     msg: str = Field(default=RET.OK.msg, description="响应消息")
-    data: Any = Field(default=None, description="响应数据")
+    data: T | None = Field(default=None, description="响应数据")
     status_code: int = Field(default=status.HTTP_200_OK, description="HTTP状态码")
     success: bool = Field(default=True, description="操作是否成功")
 
@@ -24,7 +25,7 @@ class SuccessResponse(JSONResponse):
 
     def __init__(
         self,
-        data: Any = None,
+        data: Any | None = None,
         msg: str = RET.OK.msg,
         code: int = RET.OK.code,
         status_code: int = status.HTTP_200_OK,
