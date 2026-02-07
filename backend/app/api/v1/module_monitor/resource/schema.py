@@ -162,4 +162,4 @@ class ResourceSearchQueryParam:
         self.name = (QueueEnum.like.value, name) if name else None
 
         # 精确查询字段
-        self.path = (QueueEnum.eq.value, path) if path else None
+        self.path = path
