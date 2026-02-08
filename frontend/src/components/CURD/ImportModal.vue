@@ -61,10 +61,10 @@
           <el-button @click="handleClose">{{ props.cancelButtonText || "取 消" }}</el-button>
           <el-button
             type="primary"
-            :disabled="importFormData.files.length === 0 || loading"
+            :disabled="importFormData.files.length === 0 || props.loading"
+            :loading="props.loading"
             @click="handleUpload"
           >
-            <el-icon v-if="loading"><Loading /></el-icon>
             {{ props.confirmButtonText || "确 定" }}
           </el-button>
         </div>
@@ -161,6 +161,11 @@ interface ImportModalProps {
    * 导入配置
    */
   contentConfig: IContentConfig;
+
+  /**
+   * 上传loading状态
+   */
+  loading?: boolean;
 }
 
 // 定义props
@@ -201,7 +206,6 @@ const emit = defineEmits<{
 // 引用
 const importFormRef = ref(null);
 const uploadRef = ref(null);
-const loading = ref(false);
 
 // 表单数据
 const importFormData = reactive<{
@@ -270,24 +274,19 @@ const handleUpload = async () => {
   }
 
   try {
-    loading.value = true;
     const file = importFormData.files[0].raw as File;
     const formData = new FormData();
     formData.append(props.uploadFileName, file);
 
-    // 添加额外参数
     Object.keys(props.uploadData).forEach((key) => {
       formData.append(key, props.uploadData[key]);
     });
 
-    // 触发上传事件，由父组件处理具体上传逻辑
     emit("upload", formData, file);
   } catch (error: any) {
     console.error("上传失败:", error);
     ElMessage.error("上传失败：" + error.message || error);
     emit("import-fail", error);
-  } finally {
-    loading.value = false;
   }
 };
 

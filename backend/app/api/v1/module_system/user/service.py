@@ -517,8 +517,8 @@ class UserService:
 
         header_dict = {
             "部门编号": "dept_id",
-            "用户名": "username",
-            "名称": "name",
+            "账号": "username",
+            "昵称": "name",
             "邮箱": "email",
             "手机号": "mobile",
             "性别": "gender",
@@ -564,7 +564,7 @@ class UserService:
                 try:
                     count = count + 1
                     # 数据转换
-                    gender = 1 if row["gender"] == "男" else (2 if row["gender"] == "女" else 1)
+                    gender = "1" if row["gender"] == "男" else ("2" if row["gender"] == "女" else "1")
                     status = "0" if row["status"] == "正常" else "1"
 
                     # 构建用户数据
@@ -595,8 +595,19 @@ class UserService:
                         else:
                             error_msgs.append(f"第{count}行: 用户 {user_data['username']} 已存在")
                     else:
-                        user_create_data = UserCreateSchema(**user_data)
-                        await UserCRUD(auth).create(data=user_create_data)
+                        user_create_schema = UserCreateSchema(**user_data)
+                        user_create_data = user_create_schema.model_dump(
+                            exclude_unset=True, exclude={"role_ids", "position_ids"}
+                        )
+                        new_user = await UserCRUD(auth).create(data=user_create_data)
+                        if user_create_schema.role_ids and len(user_create_schema.role_ids) > 0:
+                            await UserCRUD(auth).set_user_roles_crud(
+                                user_ids=[new_user.id], role_ids=user_create_schema.role_ids
+                            )
+                        if user_create_schema.position_ids and len(user_create_schema.position_ids) > 0:
+                            await UserCRUD(auth).set_user_positions_crud(
+                                user_ids=[new_user.id], position_ids=user_create_schema.position_ids
+                            )
                         success_count += 1
 
                 except Exception as e:
@@ -623,8 +634,8 @@ class UserService:
         """
         header_list = [
             "部门编号",
-            "用户名",
-            "名称",
+            "账号",
+            "昵称",
             "邮箱",
             "手机号",
             "性别",

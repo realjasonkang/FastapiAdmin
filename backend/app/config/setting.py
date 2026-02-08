@@ -176,6 +176,12 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = ""
 
     # ================================================= #
+    # ******************* ChromaDB配置 ****************** #
+    # ================================================= #
+    CHROMA_PERSIST_DIR: str = str(BASE_DIR / "data" / "chroma")  # ChromaDB 持久化目录
+    CHROMA_COLLECTION_NAME: str = "knowledge_base"  # ChromaDB 集合名称
+
+    # ================================================= #
     # ******************* 请求限制配置 ****************** #
     # ================================================= #
     REQUEST_LIMITER_REDIS_PREFIX: str = "fastapiadmin:request_limiter:"

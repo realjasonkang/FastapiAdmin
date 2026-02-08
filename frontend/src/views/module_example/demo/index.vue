@@ -586,6 +586,7 @@
     <ImportModal
       v-model="importDialogVisible"
       :content-config="curdContentConfig"
+      :loading="uploadLoading"
       @upload="handleUpload"
     />
 
@@ -768,6 +769,7 @@ const rules = reactive({
 
 // 导入弹窗显示状态
 const importDialogVisible = ref(false);
+const uploadLoading = ref(false);
 
 // 导出弹窗显示状态
 const exportsDialogVisible = ref(false);
@@ -972,6 +974,7 @@ async function handleMoreClick(status: string) {
 // 处理上传
 const handleUpload = async (formData: FormData) => {
   try {
+    uploadLoading.value = true;
     const response = await DemoAPI.importDemo(formData);
     if (response.data.code === ResultEnum.SUCCESS) {
       ElMessage.success(`${response.data.msg}，${response.data.data}`);
@@ -980,6 +983,8 @@ const handleUpload = async (formData: FormData) => {
     }
   } catch (error: any) {
     console.error(error);
+  } finally {
+    uploadLoading.value = false;
   }
 };
 

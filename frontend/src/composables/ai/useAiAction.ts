@@ -47,7 +47,7 @@ export interface UseAiActionOptions {
  */
 export function useAiAction(options: UseAiActionOptions = {}) {
   const route = useRoute();
-  const { actionHandlers = {}, onRefresh, onAutoSearch, currentRoute = route.path } = options;
+  const { actionHandlers = {}, onRefresh, onAutoSearch } = options;
 
   // 用于跟踪是否已卸载，防止在卸载后执行回调
   let isUnmounted = false;
@@ -150,12 +150,7 @@ export function useAiAction(options: UseAiActionOptions = {}) {
       confirmMessage?: string;
     } = {}
   ) {
-    const {
-      originalCommand = "",
-      confirmMode = "manual",
-      needConfirm = false,
-      confirmMessage,
-    } = options;
+    const { originalCommand = "", needConfirm = false, confirmMessage } = options;
 
     // 如果需要确认，先显示确认对话框
     if (needConfirm && confirmMessage) {

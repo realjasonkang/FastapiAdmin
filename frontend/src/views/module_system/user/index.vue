@@ -118,6 +118,7 @@
                     type="danger"
                     icon="delete"
                     :disabled="selectIds.length === 0"
+                    :loading="submitLoading"
                     @click="handleDelete(selectIds)"
                   >
                     批量删除
@@ -125,7 +126,11 @@
                 </el-col>
                 <el-col :span="1.5">
                   <el-dropdown v-hasPerm="['module_system:user:patch']" trigger="click">
-                    <el-button type="default" :disabled="selectIds.length === 0" icon="ArrowDown">
+                    <el-button
+                      type="default"
+                      :disabled="selectIds.length === 0 || submitLoading"
+                      icon="ArrowDown"
+                    >
                       更多
                     </el-button>
                     <template #dropdown>
@@ -517,6 +522,7 @@
           <el-button
             v-if="dialogVisible.type === 'create' || dialogVisible.type === 'update'"
             type="primary"
+            :loading="submitLoading"
             @click="handleSubmit"
           >
             确定
@@ -531,6 +537,7 @@
     <ImportModal
       v-model="importDialogVisible"
       :content-config="curdContentConfig"
+      :loading="uploadLoading"
       @upload="handleUpload"
     />
 
@@ -580,6 +587,8 @@ const queryFormRef = ref();
 const dataFormRef = ref();
 const total = ref(0);
 const loading = ref(false);
+const submitLoading = ref(false);
+const uploadLoading = ref(false);
 const isExpand = ref(false);
 const isExpandable = ref(true);
 const drawerSize = computed(() => (appStore.device === DeviceEnum.DESKTOP ? "450px" : "90%"));
@@ -879,11 +888,9 @@ async function handleOpenDialog(type: "create" | "update" | "detail", id?: numbe
 
 // 提交表单（防抖）
 async function handleSubmit() {
-  // 表单校验
   dataFormRef.value.validate(async (valid: any) => {
     if (valid) {
-      loading.value = true;
-      // 根据弹窗传入的参数(deatil\create\update)判断走什么逻辑
+      submitLoading.value = true;
       const id = formData.id;
       try {
         if (id) {
@@ -894,7 +901,6 @@ async function handleSubmit() {
         dialogVisible.visible = false;
         resetForm();
         handleResetQuery();
-        // 如果当前编辑的是登录用户，更新全局用户状态
         const userStore = useUserStore();
         if (id === userStore.basicInfo.id) {
           await userStore.getUserInfo();
@@ -902,7 +908,7 @@ async function handleSubmit() {
       } catch (error: any) {
         console.error(error);
       } finally {
-        loading.value = false;
+        submitLoading.value = false;
       }
     }
   });
@@ -919,13 +925,13 @@ async function handleDelete(ids: number[]) {
   })
     .then(async () => {
       try {
-        loading.value = true;
+        submitLoading.value = true;
         await UserAPI.deleteUser(ids);
         handleResetQuery();
       } catch (error: any) {
         console.error(error);
       } finally {
-        loading.value = false;
+        submitLoading.value = false;
       }
     })
     .catch(() => {
@@ -943,13 +949,13 @@ async function handleMoreClick(status: string) {
     })
       .then(async () => {
         try {
-          loading.value = true;
+          submitLoading.value = true;
           await UserAPI.batchUser({ ids: selectIds.value, status });
           handleResetQuery();
         } catch (error: any) {
           console.error(error);
         } finally {
-          loading.value = false;
+          submitLoading.value = false;
         }
       })
       .catch(() => {
@@ -973,6 +979,7 @@ const emit = defineEmits(["import-success"]);
 // 上传文件
 const handleUpload = async (formData: FormData) => {
   try {
+    uploadLoading.value = true;
     const response = await UserAPI.importUser(formData);
     if (response.data.code === ResultEnum.SUCCESS) {
       ElMessage.success(`${response.data.msg}，${response.data.data}`);
@@ -983,6 +990,8 @@ const handleUpload = async (formData: FormData) => {
   } catch (error: any) {
     console.error(error);
     ElMessage.error("上传失败：" + error);
+  } finally {
+    uploadLoading.value = false;
   }
 };
 
