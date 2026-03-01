@@ -262,7 +262,7 @@
               </el-radio-group>
             </div>
           </template>
-          <ECharts :options="visitTrendChartOptions" height="400px" />
+          <ECharts :options="visitTrendChartOptions" height="calc(100vh - 550px)" />
         </el-card>
       </el-col>
       <!-- 最新动态 -->
@@ -285,7 +285,7 @@
             </div>
           </template>
 
-          <el-scrollbar height="400px">
+          <el-scrollbar height="calc(100vh - 550px)">
             <el-timeline class="p-3">
               <el-timeline-item
                 v-for="(item, index) in vesionList"

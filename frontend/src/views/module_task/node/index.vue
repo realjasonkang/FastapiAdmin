@@ -113,15 +113,6 @@
           <template #default="scope">
             <el-space class="flex">
               <el-button
-                type="info"
-                size="small"
-                link
-                icon="Document"
-                @click="handleOpenExecutionLogDrawer(scope.row)"
-              >
-                执行记录
-              </el-button>
-              <el-button
                 v-hasPerm="['module_task:node:execute']"
                 type="warning"
                 size="small"
@@ -309,7 +300,7 @@
         </el-form-item>
         <el-form-item label="执行方式" prop="trigger">
           <el-radio-group v-model="executeFormData.trigger">
-            <el-radio value="now">一次性任务</el-radio>
+            <el-radio value="now">立即执行</el-radio>
             <el-radio value="cron">Cron表达式</el-radio>
             <el-radio value="interval">时间间隔</el-radio>
             <el-radio value="date">固定日期</el-radio>
@@ -416,153 +407,6 @@
         <el-button type="primary" @click="handleExecuteNode">确认</el-button>
       </template>
     </el-dialog>
-
-    <el-drawer v-model="executionLogDrawerVisible" title="执行记录" direction="rtl" size="80%">
-      <div class="execution-log-drawer">
-        <div class="search-container">
-          <el-form
-            ref="logQueryFormRef"
-            :model="logQueryFormData"
-            :inline="true"
-            label-suffix=":"
-            @submit.prevent="handleLogQuery"
-          >
-            <el-form-item prop="status" label="执行状态">
-              <el-select
-                v-model="logQueryFormData.status"
-                placeholder="请选择状态"
-                clearable
-                style="width: 120px"
-              >
-                <el-option value="pending" label="待执行" />
-                <el-option value="running" label="执行中" />
-                <el-option value="success" label="成功" />
-                <el-option value="failed" label="失败" />
-                <el-option value="timeout" label="超时" />
-                <el-option value="cancelled" label="已取消" />
-              </el-select>
-            </el-form-item>
-            <el-form-item prop="trigger_type" label="触发方式">
-              <el-select
-                v-model="logQueryFormData.trigger_type"
-                placeholder="请选择"
-                clearable
-                style="width: 120px"
-              >
-                <el-option value="cron" label="Cron表达式" />
-                <el-option value="interval" label="时间间隔" />
-                <el-option value="date" label="固定日期" />
-                <el-option value="manual" label="一次性任务" />
-              </el-select>
-            </el-form-item>
-            <el-form-item class="search-buttons">
-              <el-button type="primary" icon="search" native-type="submit">查询</el-button>
-              <el-button icon="refresh" @click="handleResetLogQuery">重置</el-button>
-              <el-button
-                v-hasPerm="['module_task:job:delete']"
-                type="danger"
-                icon="delete"
-                :disabled="logSelectIds.length === 0"
-                @click="handleBatchDeleteExecutionLog"
-              >
-                批量删除
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-
-        <el-table
-          v-loading="logLoading"
-          :data="executionLogData"
-          class="data-table__content"
-          highlight-current-row
-          border
-          stripe
-          height="calc(100vh - 240px)"
-          max-height="calc(100vh - 240px)"
-          @selection-change="handleLogSelectionChange"
-        >
-          <template #empty>
-            <el-empty :image-size="80" description="暂无数据" />
-          </template>
-          <el-table-column type="selection" align="center" min-width="55" />
-          <el-table-column type="index" fixed label="序号" min-width="60">
-            <template #default="scope">
-              {{ (logQueryFormData.page_no - 1) * logQueryFormData.page_size + scope.$index + 1 }}
-            </template>
-          </el-table-column>
-          <el-table-column label="任务ID" prop="job_id" min-width="80" show-overflow-tooltip />
-          <el-table-column label="任务名称" prop="job_name" min-width="140" />
-          <el-table-column label="触发方式" prop="trigger_type" min-width="120">
-            <template #default="scope">
-              <el-tag size="small">{{ getTriggerTypeLabel(scope.row.trigger_type) }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" prop="status" min-width="80">
-            <template #default="scope">
-              <el-tag :type="getLogStatusType(scope.row.status)" size="small">
-                {{ getLogStatusLabel(scope.row.status) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column
-            label="下次执行时间"
-            prop="next_run_time"
-            min-width="200"
-            show-overflow-tooltip
-          />
-          <el-table-column label="执行结果" prop="result" min-width="100" show-overflow-tooltip />
-          <el-table-column label="错误信息" prop="error" min-width="100" show-overflow-tooltip />
-          <el-table-column label="执行元数据" min-width="100">
-            <template #default="scope">
-              <el-button
-                v-if="scope.row.job_state"
-                type="primary"
-                size="small"
-                link
-                icon="View"
-                @click="handleViewJobState(scope.row)"
-              >
-                查看
-              </el-button>
-              <span v-else>-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="创建时间" prop="created_time" min-width="160" />
-          <el-table-column label="更新时间" prop="updated_time" min-width="160" />
-          <el-table-column label="操作" min-width="80" fixed="right">
-            <template #default="scope">
-              <el-button
-                v-hasPerm="['module_task:job:delete']"
-                type="danger"
-                size="small"
-                link
-                icon="delete"
-                @click="handleDeleteExecutionLog(scope.row.id)"
-              >
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="pagination-container">
-          <pagination
-            v-model:total="logTotal"
-            v-model:page="logQueryFormData.page_no"
-            v-model:limit="logQueryFormData.page_size"
-            @pagination="loadExecutionLogData"
-          />
-        </div>
-      </div>
-    </el-drawer>
-
-    <el-dialog v-model="jobStateVisible" title="执行元数据" width="800px">
-      <JsonPretty :value="jobStateData" height="400px" />
-      <template #footer>
-        <el-button type="primary" @click="jobStateVisible = false">关闭</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -573,14 +417,12 @@ defineOptions({
 });
 
 import NodeAPI, { NodeTable, NodeForm, NodePageQuery, TriggerType } from "@/api/module_task/node";
-import JobAPI, { JobLogTable, JobLogPageQuery } from "@/api/module_task/job";
 import { useDictStore } from "@/store/index";
 import { nextTick, onMounted, reactive, ref } from "vue";
 import { vue3CronPlus } from "vue3-cron-plus";
 import "vue3-cron-plus/dist/index.css";
 import OperationColumn from "@/components/OperationColumn/index.vue";
 import IntervalTab from "@/components/IntervalTab/index.vue";
-import JsonPretty from "@/components/JsonPretty/index.vue";
 import Codemirror, { CmComponentRef } from "codemirror-editor-vue3";
 import type { EditorConfiguration } from "codemirror";
 import "codemirror/mode/python/python.js";
@@ -602,7 +444,6 @@ const codeEditorOptions: EditorConfiguration = {
 const queryFormRef = ref();
 const dataFormRef = ref();
 const executeFormRef = ref();
-const logQueryFormRef = ref();
 const total = ref(0);
 const selectIds = ref<number[]>([]);
 const loading = ref(false);
@@ -612,27 +453,11 @@ const codeEditorRef = ref<CmComponentRef>();
 
 const pageTableData = ref<NodeTable[]>([]);
 
-const executionLogDrawerVisible = ref(false);
-const logLoading = ref(false);
-const logTotal = ref(0);
-const executionLogData = ref<JobLogTable[]>([]);
-const currentNodeId = ref<number | null>(null);
-const logSelectIds = ref<number[]>([]);
-
 const queryFormData = reactive<NodePageQuery>({
   page_no: 1,
   page_size: 10,
   name: undefined,
   code: undefined,
-});
-
-const logQueryFormData = reactive<JobLogPageQuery>({
-  page_no: 1,
-  page_size: 10,
-  job_id: undefined,
-  job_name: undefined,
-  status: undefined,
-  trigger_type: undefined,
 });
 
 const defaultCodeBlock = `def handler(*args, **kwargs) -> None:
@@ -680,9 +505,6 @@ const executeFormData = reactive<{
   start_date: undefined,
   end_date: undefined,
 });
-
-const jobStateVisible = ref(false);
-const jobStateData = ref<any>({});
 
 const dialogVisible = reactive({
   title: "",
@@ -924,152 +746,6 @@ onMounted(async () => {
   await dictStore.getDict(["sys_job_store", "sys_job_executor"]);
   loadingData();
 });
-
-function getTriggerTypeLabel(type: string | undefined) {
-  switch (type) {
-    case "cron":
-      return "Cron表达式";
-    case "interval":
-      return "时间间隔";
-    case "date":
-      return "固定日期";
-    case "manual":
-      return "一次性任务";
-    default:
-      return type || "-";
-  }
-}
-
-function getLogStatusType(status: string) {
-  switch (status) {
-    case "success":
-      return "success";
-    case "running":
-      return "primary";
-    case "pending":
-      return "info";
-    case "failed":
-    case "timeout":
-      return "danger";
-    case "cancelled":
-      return "warning";
-    default:
-      return "info";
-  }
-}
-
-function getLogStatusLabel(status: string) {
-  switch (status) {
-    case "pending":
-      return "待执行";
-    case "running":
-      return "执行中";
-    case "success":
-      return "成功";
-    case "failed":
-      return "失败";
-    case "timeout":
-      return "超时";
-    case "cancelled":
-      return "已取消";
-    default:
-      return status;
-  }
-}
-
-async function handleOpenExecutionLogDrawer(row: NodeTable) {
-  if (!row.id) return;
-  currentNodeId.value = row.id;
-  logQueryFormData.job_id = String(row.id);
-  logQueryFormData.job_name = row.name;
-  logQueryFormData.page_no = 1;
-  executionLogDrawerVisible.value = true;
-  await loadExecutionLogData();
-}
-
-async function loadExecutionLogData() {
-  logLoading.value = true;
-  try {
-    const response = await JobAPI.getJobLogList(logQueryFormData);
-    executionLogData.value = response.data.data.items;
-    logTotal.value = response.data.data.total;
-  } catch (error: any) {
-    console.error(error);
-  } finally {
-    logLoading.value = false;
-  }
-}
-
-async function handleLogQuery() {
-  logQueryFormData.page_no = 1;
-  loadExecutionLogData();
-}
-
-async function handleResetLogQuery() {
-  logQueryFormRef.value.resetFields();
-  logQueryFormData.page_no = 1;
-  loadExecutionLogData();
-}
-
-function handleLogSelectionChange(selection: JobLogTable[]) {
-  logSelectIds.value = selection
-    .map((item) => item.id)
-    .filter((id): id is number => id !== undefined);
-}
-
-function handleViewJobState(row: JobLogTable) {
-  if (row.job_state) {
-    try {
-      jobStateData.value = JSON.parse(row.job_state);
-    } catch {
-      jobStateData.value = row.job_state;
-    }
-    jobStateVisible.value = true;
-  }
-}
-
-async function handleDeleteExecutionLog(id: number) {
-  ElMessageBox.confirm("确认删除该条执行记录?", "警告", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(async () => {
-      try {
-        await JobAPI.deleteJobLog([id]);
-        await loadExecutionLogData();
-      } catch (error: any) {
-        console.error(error);
-      }
-    })
-    .catch(() => {
-      ElMessageBox.close();
-    });
-}
-
-async function handleBatchDeleteExecutionLog() {
-  if (logSelectIds.value.length === 0) {
-    ElMessage.warning("请先选择要删除的执行记录");
-    return;
-  }
-  ElMessageBox.confirm(`确认删除选中的 ${logSelectIds.value.length} 条执行记录?`, "警告", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(async () => {
-      try {
-        await JobAPI.deleteJobLog(logSelectIds.value);
-        logSelectIds.value = [];
-        await loadExecutionLogData();
-      } catch (error: any) {
-        console.error(error);
-      }
-    })
-    .catch(() => {
-      ElMessageBox.close();
-    });
-}
 </script>
 
 <style scoped>

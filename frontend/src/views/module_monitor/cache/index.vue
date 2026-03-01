@@ -142,8 +142,8 @@
                 :loading="loading"
                 :data="cacheNames"
                 row-key="cache_name"
-                height="calc(100vh - 280px)"
-                max-height="calc(100vh - 280px)"
+                height="calc(100vh - 290px)"
+                max-height="calc(100vh - 290px)"
                 border
               >
                 <template #empty>
@@ -216,8 +216,8 @@
               <el-table
                 :loading="subLoading"
                 :data="cacheKeys.map((key) => ({ cacheKey: key }))"
-                height="calc(100vh - 280px)"
-                max-height="calc(100vh - 280px)"
+                height="calc(100vh - 290px)"
+                max-height="calc(100vh - 290px)"
                 row-key="cacheKey"
                 border
               >
@@ -539,6 +539,6 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .chart-container {
-  height: calc(100vh - 480px);
+  height: calc(100vh - 490px);
 }
 </style>

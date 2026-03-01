@@ -49,7 +49,9 @@ class JobQueryParam:
         status: str | None = Query(None, description="执行状态"),
         trigger_type: str | None = Query(None, description="触发方式"),
     ) -> None:
-        self.job_id = (QueueEnum.eq.value, job_id)
-        self.job_name = (QueueEnum.like.value, job_name)
+        # 确保 job_id 是字符串类型
+        self.job_id = (QueueEnum.eq.value, str(job_id) if job_id is not None else None)
+        # 只有当 job_name 不为空时才添加查询条件
+        self.job_name = (QueueEnum.like.value, job_name) if job_name else None
         self.status = (QueueEnum.eq.value, status)
         self.trigger_type = (QueueEnum.eq.value, trigger_type)
