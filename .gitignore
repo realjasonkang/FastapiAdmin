@@ -15,7 +15,6 @@ backend/.pytest_cache
 backend/logs
 backend/alembic/versions/*
 backend/*.db
-
 backend/.ruff_cache
 backend/.ruff.toml
 
@@ -26,7 +25,6 @@ frontend/.DS_Store
 frontend/node_modules
 frontend/dist
 frontend/.husky
-
 frontend/src/types/auto-imports.d.ts
 frontend/src/types/components.d.ts
 
@@ -34,4 +32,8 @@ devops/nginx/fastapp/dist
 devops/nginx/fastdocs/dist
 devops/nginx/frontend/dist
 devops/nginx/ssl
-docker-compose.yaml
+
+# 本地配置覆盖文件（不提交到版本控制）
+docker-compose.override.yaml
+frontend/.env.local
+backend/env/.env.local
