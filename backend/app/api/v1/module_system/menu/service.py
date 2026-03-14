@@ -1,3 +1,5 @@
+from typing import Any
+
 from app.api.v1.module_system.auth.schema import AuthSchema
 from app.core.base_schema import BatchSetAvailable
 from app.core.exceptions import CustomException
@@ -84,7 +86,10 @@ class MenuService:
         返回:
         - dict: 创建的菜单对象。
         """
-        menu = await MenuCRUD(auth).get(name=data.name)
+        search: dict[str, Any] = {"title": data.title}
+        if data.parent_id is not None:
+            search["parent_id"] = data.parent_id
+        menu = await MenuCRUD(auth).get(**search)
         if menu:
             raise CustomException(msg="创建失败，该菜单已存在")
 
@@ -108,15 +113,18 @@ class MenuService:
         menu = await MenuCRUD(auth).get_by_id_crud(id=id)
         if not menu:
             raise CustomException(msg="更新失败，该菜单不存在")
-        exist_menu = await MenuCRUD(auth).get(name=data.name)
+        search: dict[str, Any] = {"title": data.title}
+        if data.parent_id is not None:
+            search["parent_id"] = data.parent_id
+        exist_menu = await MenuCRUD(auth).get(**search)
         if exist_menu and exist_menu.id != id:
-            raise CustomException(msg="更新失败，菜单名称重复")
+            raise CustomException(msg="更新失败，菜单标题重复")
 
         if data.parent_id:
             parent_menu = await MenuCRUD(auth).get_by_id_crud(id=data.parent_id)
             if not parent_menu:
                 raise CustomException(msg="更新失败，父级菜单不存在")
-            data.parent_name = parent_menu.name
+            data.parent_name = parent_menu.title
         new_menu = await MenuCRUD(auth).update(id=id, data=data)
 
         await cls.set_menu_available_service(

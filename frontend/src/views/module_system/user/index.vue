@@ -457,10 +457,9 @@
             </el-select>
           </el-form-item>
 
-          <el-form-item label="密码" prop="password">
+          <el-form-item v-if="!formData.id" label="密码" prop="password">
             <el-input
               v-model="formData.password"
-              :readonly="!!formData.id"
               placeholder="请输入密码"
               type="password"
               show-password

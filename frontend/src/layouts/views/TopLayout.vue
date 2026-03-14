@@ -3,14 +3,20 @@
     <!-- 顶部菜单栏 -->
     <div class="layout__header">
       <div class="layout__header-left">
-        <!-- Logo -->
-        <AppLogo v-if="isShowLogo" :collapse="isLogoCollapsed" />
-        <!-- 菜单 -->
-        <BasicMenu :data="routes" menu-mode="horizontal" base-path="" />
-      </div>
-      <!-- 操作按钮 -->
-      <div class="layout__header-right">
-        <NavbarActions />
+        <!-- Logo区域 -->
+        <div v-if="isShowLogo" class="layout__header-logo">
+          <AppLogo :collapse="isLogoCollapsed" />
+        </div>
+
+        <!-- 顶部菜单区域 -->
+        <div class="layout__header-menu">
+          <BasicMenu :data="topMenuItems" menu-mode="horizontal" base-path="" />
+        </div>
+
+        <!-- 右侧操作区域 -->
+        <div class="layout__header-right">
+          <NavbarActions />
+        </div>
       </div>
     </div>
 
@@ -26,7 +32,7 @@
 import { computed } from "vue";
 import { useWindowSize } from "@vueuse/core";
 import { useLayout } from "../composables/useLayout";
-import { useLayoutMenu } from "../composables/useLayoutMenu";
+import { usePermissionStore } from "@/store";
 import BaseLayout from "./BaseLayout.vue";
 import AppLogo from "../components/AppLogo/index.vue";
 import BasicMenu from "../components/Menu/BasicMenu.vue";
@@ -38,7 +44,10 @@ import AppMain from "../components/AppMain/index.vue";
 const { isShowTagsView, isShowLogo } = useLayout();
 
 // 菜单相关
-const { routes } = useLayoutMenu();
+const permissionStore = usePermissionStore();
+const topMenuItems = computed(() => {
+  return permissionStore.routes.filter((item) => !item.meta?.hidden);
+});
 
 // 响应式窗口尺寸
 const { width } = useWindowSize();
@@ -64,62 +73,79 @@ const isLogoCollapsed = computed(() => width.value < 768);
       display: flex;
       flex: 1;
       align-items: center;
-      min-width: 0; // 允许flex收缩
+      min-width: 0;
+      height: 100%;
+    }
+
+    &-logo {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
       height: 100%;
 
-      // Logo样式由AppLogo组件的全局样式控制
       :deep(.logo) {
-        flex-shrink: 0; // 防止Logo被压缩
         height: $navbar-height;
+      }
+    }
+
+    &-menu {
+      display: flex;
+      flex: 1;
+      align-items: center;
+      min-width: 0;
+      height: 100%;
+      overflow: hidden;
+
+      :deep(.el-menu) {
+        height: 100%;
+        background-color: transparent;
+        border: none;
+      }
+
+      :deep(.el-menu--horizontal) {
+        flex: 1;
+        min-width: 0;
+        height: $navbar-height;
+        overflow: hidden;
+        line-height: $navbar-height;
+        background-color: transparent;
+        border: none;
+
+        .el-menu-item {
+          height: $navbar-height;
+          line-height: $navbar-height;
+        }
+
+        .el-sub-menu {
+          .el-sub-menu__title {
+            height: $navbar-height;
+            line-height: $navbar-height;
+          }
+
+          &.has-active-child {
+            .el-sub-menu__title {
+              color: var(--el-color-primary) !important;
+              border-bottom: 2px solid var(--el-color-primary) !important;
+
+              .menu-icon {
+                color: var(--el-color-primary) !important;
+              }
+            }
+          }
+        }
+
+        .el-menu--popup {
+          min-width: 160px;
+        }
       }
     }
 
     &-right {
       display: flex;
-      flex-shrink: 0; // 防止操作按钮被压缩
+      flex-shrink: 0;
       align-items: center;
       height: 100%;
       padding-left: 12px;
-    }
-
-    // 菜单样式
-    :deep(.el-menu--horizontal) {
-      flex: 1;
-      min-width: 0; // 允许菜单收缩
-      height: $navbar-height;
-      overflow: hidden; // 防止菜单溢出
-      line-height: $navbar-height;
-      background-color: transparent;
-      border: none;
-
-      .el-menu-item {
-        height: $navbar-height;
-        line-height: $navbar-height;
-      }
-
-      .el-sub-menu {
-        .el-sub-menu__title {
-          height: $navbar-height;
-          line-height: $navbar-height;
-        }
-
-        // 父菜单激活状态 - 水平布局专用
-        &.has-active-child {
-          .el-sub-menu__title {
-            color: var(--el-color-primary) !important;
-            border-bottom: 2px solid var(--el-color-primary) !important;
-
-            .menu-icon {
-              color: var(--el-color-primary) !important;
-            }
-          }
-        }
-      }
-
-      // 修复子菜单弹出位置
-      .el-menu--popup {
-        min-width: 160px;
-      }
     }
   }
 

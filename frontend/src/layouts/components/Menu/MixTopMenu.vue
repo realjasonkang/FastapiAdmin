@@ -18,14 +18,10 @@
         ? variables['menu-active-text']
         : undefined
     "
-    @select="handleMenuSelect"
+    @select="handleTopMenuSelect"
   >
-    <el-menu-item v-for="menuItem in processedTopMenus" :key="menuItem.path" :index="menuItem.path">
-      <MenuItemContent
-        v-if="menuItem.meta"
-        :icon="menuItem.meta.icon"
-        :title="menuItem.meta.title"
-      />
+    <el-menu-item v-for="item in topMenuItems" :key="item.path" :index="item.path">
+      <MenuItemContent v-if="item.meta" :icon="item.meta.icon" :title="item.meta.title" />
     </el-menu-item>
   </el-menu>
 </template>
@@ -57,7 +53,7 @@ const sidebarColorScheme = computed(() => settingsStore.sidebarColorScheme);
 const topMenus = ref<RouteRecordRaw[]>([]);
 
 // 处理后的顶部菜单列表 - 智能显示唯一子菜单的标题
-const processedTopMenus = computed(() => {
+const topMenuItems = computed(() => {
   return topMenus.value.map((route) => {
     // 如果路由设置了 alwaysShow=true，或者没有子菜单，直接返回原路由
     if (route.meta?.alwaysShow || !route.children || route.children.length === 0) {
@@ -89,7 +85,7 @@ const processedTopMenus = computed(() => {
  * 处理菜单点击事件，切换顶部菜单并加载对应的左侧菜单
  * @param routePath 点击的菜单路径
  */
-const handleMenuSelect = (routePath: string) => {
+const handleTopMenuSelect = (routePath: string) => {
   updateMenuState(routePath);
 };
 

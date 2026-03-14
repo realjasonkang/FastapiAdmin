@@ -274,7 +274,7 @@ function logout() {
     align-items: center;
     justify-content: center;
     min-width: 44px; /* 增加最小点击区域到44px，符合人机交互标准 */
-    height: 100%;
+    height: 44px;
     padding: 0 8px;
     text-align: center;
     cursor: pointer;
@@ -315,7 +315,7 @@ function logout() {
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: var(--el-fill-color-light);
 
       :deep([class^="i-svg:"]) {
         color: var(--el-color-primary);
@@ -368,20 +368,20 @@ function logout() {
 .navbar-actions--white-text {
   .navbar-actions__item {
     :deep([class^="i-svg:"]) {
-      color: rgba(255, 255, 255, 0.85);
+      color: color-mix(in srgb, var(--el-color-white) 85%, transparent);
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: color-mix(in srgb, var(--el-color-white) 10%, transparent);
 
       :deep([class^="i-svg:"]) {
-        color: #fff;
+        color: var(--el-color-white);
       }
     }
   }
 
   .user-profile__name {
-    color: rgba(255, 255, 255, 0.85);
+    color: color-mix(in srgb, var(--el-color-white) 85%, transparent);
   }
 }
 
