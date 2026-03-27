@@ -9,10 +9,12 @@
     <el-container>
       <!-- 数据权限 -->
       <el-aside>
-        <div class="border-r-1 border-r-[#f0f0f0] b-r-solid h-[100%] p-[20px] box-border">
+        <div
+          class="border-r-1 border-r-[var(--el-border-color-lighter)] b-r-solid h-[100%] p-[20px] box-border"
+        >
           <div class="flex items-center">
             <div style="display: flex; gap: 10px">
-              <div style="width: 10px; background-color: #409eff"></div>
+              <div style="width: 10px; background-color: var(--el-color-primary)"></div>
               <div>
                 <span style="font-size: 16px">数据授权</span>
                 <el-tooltip placement="right">
@@ -41,7 +43,7 @@
 
             <div
               v-if="permissionState.data_scope === 5 && deptTreeData.length"
-              class="mt-5 max-h-[60vh] b-1 b-solid b-[#e5e7eb] p-10px overflow-auto box-border"
+              class="mt-5 max-h-[60vh] b-1 b-solid b-[var(--el-border-color-lighter)] p-10px overflow-auto box-border"
             >
               <el-input v-model="deptFilterText" placeholder="部门名称" />
               <el-tree
@@ -68,7 +70,7 @@
       <!-- 菜单权限 -->
       <el-main>
         <div style="display: flex; gap: 10px">
-          <div style="width: 10px; background-color: #409eff"></div>
+          <div style="width: 10px; background-color: var(--el-color-primary)"></div>
           <div>
             <span style="font-size: 16px">菜单授权</span>
             <el-tooltip placement="right">
@@ -109,7 +111,9 @@
           </div>
         </div>
 
-        <div class="mt-5 max-h-[69vh] b-1 b-solid b-[#e5e7eb] p-10px overflow-auto box-border">
+        <div
+          class="mt-5 max-h-[69vh] b-1 b-solid b-[var(--el-border-color-lighter)] p-10px overflow-auto box-border"
+        >
           <el-tree
             ref="permTreeRef"
             node-key="value"

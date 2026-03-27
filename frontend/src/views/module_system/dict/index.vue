@@ -1,88 +1,73 @@
 <!-- 字典 -->
 <template>
   <div class="app-container">
+    <!-- 搜索区域 -->
+    <el-card class="search-container">
+      <el-form
+        ref="queryFormRef"
+        :model="queryFormData"
+        :inline="true"
+        label-suffix=":"
+        @submit.prevent="handleQuery"
+      >
+        <el-form-item prop="dict_name" label="字典名称">
+          <el-input v-model="queryFormData.dict_name" placeholder="请输入字典名称" clearable />
+        </el-form-item>
+        <el-form-item prop="dict_type" label="字典类型">
+          <el-input v-model="queryFormData.dict_type" placeholder="请输入字典类型" clearable />
+        </el-form-item>
+        <el-form-item prop="status" label="状态">
+          <el-select
+            v-model="queryFormData.status"
+            placeholder="请选择状态"
+            style="width: 167.5px"
+            clearable
+          >
+            <el-option value="0" label="启用" />
+            <el-option value="1" label="停用" />
+          </el-select>
+        </el-form-item>
+        <!-- 时间范围，收起状态下隐藏 -->
+        <el-form-item v-if="isExpand" prop="start_time" label="创建时间">
+          <DatePicker v-model="dateRange" @update:model-value="handleDateRangeChange" />
+        </el-form-item>
+        <!-- 查询、重置、展开/收起按钮 -->
+        <el-form-item class="search-buttons">
+          <el-button
+            v-hasPerm="['module_system:dict_type:query']"
+            type="primary"
+            icon="search"
+            native-type="submit"
+          >
+            查询
+          </el-button>
+          <el-button
+            v-hasPerm="['module_system:dict_type:query']"
+            icon="refresh"
+            @click="handleResetQuery"
+          >
+            重置
+          </el-button>
+          <!-- 展开/收起 -->
+          <template v-if="isExpandable">
+            <el-link class="ml-3" type="primary" underline="never" @click="isExpand = !isExpand">
+              {{ isExpand ? "收起" : "展开" }}
+              <el-icon>
+                <template v-if="isExpand">
+                  <ArrowUp />
+                </template>
+                <template v-else>
+                  <ArrowDown />
+                </template>
+              </el-icon>
+            </el-link>
+          </template>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <!-- 内容区域 -->
     <el-card class="data-table">
-      <template #header>
-        <div class="card-header">
-          <span>
-            <el-tooltip content="字典管理维护系统的字典。">
-              <QuestionFilled class="w-4 h-4 mx-1" />
-            </el-tooltip>
-            字典列表
-          </span>
-        </div>
-        <!-- 搜索区域 -->
-        <div class="search-container">
-          <el-form
-            ref="queryFormRef"
-            :model="queryFormData"
-            :inline="true"
-            label-suffix=":"
-            @submit.prevent="handleQuery"
-          >
-            <el-form-item prop="dict_name" label="字典名称">
-              <el-input v-model="queryFormData.dict_name" placeholder="请输入字典名称" clearable />
-            </el-form-item>
-            <el-form-item prop="dict_type" label="字典类型">
-              <el-input v-model="queryFormData.dict_type" placeholder="请输入字典类型" clearable />
-            </el-form-item>
-            <el-form-item prop="status" label="状态">
-              <el-select
-                v-model="queryFormData.status"
-                placeholder="请选择状态"
-                style="width: 167.5px"
-                clearable
-              >
-                <el-option value="0" label="启用" />
-                <el-option value="1" label="停用" />
-              </el-select>
-            </el-form-item>
-            <!-- 时间范围，收起状态下隐藏 -->
-            <el-form-item v-if="isExpand" prop="start_time" label="创建时间">
-              <DatePicker v-model="dateRange" @update:model-value="handleDateRangeChange" />
-            </el-form-item>
-            <!-- 查询、重置、展开/收起按钮 -->
-            <el-form-item class="search-buttons">
-              <el-button
-                v-hasPerm="['module_system:dict_type:query']"
-                type="primary"
-                icon="search"
-                native-type="submit"
-              >
-                查询
-              </el-button>
-              <el-button
-                v-hasPerm="['module_system:dict_type:query']"
-                icon="refresh"
-                @click="handleResetQuery"
-              >
-                重置
-              </el-button>
-              <!-- 展开/收起 -->
-              <template v-if="isExpandable">
-                <el-link
-                  class="ml-3"
-                  type="primary"
-                  underline="never"
-                  @click="isExpand = !isExpand"
-                >
-                  {{ isExpand ? "收起" : "展开" }}
-                  <el-icon>
-                    <template v-if="isExpand">
-                      <ArrowUp />
-                    </template>
-                    <template v-else>
-                      <ArrowDown />
-                    </template>
-                  </el-icon>
-                </el-link>
-              </template>
-            </el-form-item>
-          </el-form>
-        </div>
-      </template>
-
       <!-- 功能区域 -->
       <div class="data-table__toolbar">
         <div class="data-table__toolbar--left">
@@ -173,8 +158,8 @@
           ref="dataTableRef"
           v-loading="loading"
           :data="pageTableData"
-          height="calc(100vh - 440px)"
-          max-height="calc(100vh - 440px)"
+          height="calc(100vh - 350px)"
+          max-height="calc(100vh - 350px)"
           border
           stripe
           @selection-change="handleSelectionChange"

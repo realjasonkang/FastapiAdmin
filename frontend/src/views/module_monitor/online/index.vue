@@ -1,61 +1,47 @@
 <!-- 在线用户 -->
 <template>
   <div class="app-container">
+    <!-- 搜索区域 -->
+    <el-card class="search-container">
+      <el-form
+        ref="queryFormRef"
+        :model="queryFormData"
+        :inline="true"
+        label-suffix=":"
+        @submit.prevent="handleQuery"
+      >
+        <el-form-item prop="ipaddr" label="IP地址">
+          <el-input v-model="queryFormData.ipaddr" placeholder="请输入IP地址" clearable />
+        </el-form-item>
+        <el-form-item prop="name" label="用户名">
+          <el-input v-model="queryFormData.name" placeholder="请输入用户名" clearable />
+        </el-form-item>
+        <el-form-item prop="login_location" label="登录位置">
+          <el-input v-model="queryFormData.login_location" placeholder="请输入登录位置" clearable />
+        </el-form-item>
+        <!-- 查询、重置、展开/收起按钮 -->
+        <el-form-item class="search-buttons">
+          <el-button
+            v-hasPerm="['module_monitor:online:query']"
+            type="primary"
+            icon="search"
+            native-type="submit"
+          >
+            查询
+          </el-button>
+          <el-button
+            v-hasPerm="['module_monitor:online:query']"
+            icon="refresh"
+            @click="handleResetQuery"
+          >
+            重置
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <!-- 内容区域 -->
     <el-card class="data-table">
-      <template #header>
-        <div class="card-header">
-          <span>
-            <el-tooltip content="在线用户列表">
-              <QuestionFilled class="w-4 h-4 mx-1" />
-            </el-tooltip>
-            在线用户列表
-          </span>
-        </div>
-        <!-- 搜索区域 -->
-        <div class="search-container">
-          <el-form
-            ref="queryFormRef"
-            :model="queryFormData"
-            :inline="true"
-            label-suffix=":"
-            @submit.prevent="handleQuery"
-          >
-            <el-form-item prop="ipaddr" label="IP地址">
-              <el-input v-model="queryFormData.ipaddr" placeholder="请输入IP地址" clearable />
-            </el-form-item>
-            <el-form-item prop="name" label="用户名">
-              <el-input v-model="queryFormData.name" placeholder="请输入用户名" clearable />
-            </el-form-item>
-            <el-form-item prop="login_location" label="登录位置">
-              <el-input
-                v-model="queryFormData.login_location"
-                placeholder="请输入登录位置"
-                clearable
-              />
-            </el-form-item>
-            <!-- 查询、重置、展开/收起按钮 -->
-            <el-form-item class="search-buttons">
-              <el-button
-                v-hasPerm="['module_monitor:online:query']"
-                type="primary"
-                icon="search"
-                native-type="submit"
-              >
-                查询
-              </el-button>
-              <el-button
-                v-hasPerm="['module_monitor:online:query']"
-                icon="refresh"
-                @click="handleResetQuery"
-              >
-                重置
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-      </template>
-
       <!-- 功能区域 -->
       <div class="data-table__toolbar">
         <div class="data-table__toolbar--left">
@@ -107,8 +93,8 @@
           ref="dataTableRef"
           v-loading="loading"
           :data="pageTableData"
-          height="calc(100vh - 440px)"
-          max-height="calc(100vh - 440px)"
+          height="calc(100vh - 350px)"
+          max-height="calc(100vh - 350px)"
           border
           stripe
           @selection-change="handleSelectionChange"

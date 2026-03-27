@@ -1,5 +1,40 @@
 <template>
   <div class="app-container">
+    <el-card class="search-container">
+      <el-form
+        ref="queryFormRef"
+        :model="queryFormData"
+        :inline="true"
+        label-suffix=":"
+        @submit.prevent="handleQuery"
+      >
+        <el-form-item prop="name" label="任务名称">
+          <el-input
+            v-model="queryFormData.name"
+            placeholder="请输入任务名称"
+            clearable
+            style="width: 150px"
+          />
+        </el-form-item>
+        <el-form-item prop="status" label="任务状态">
+          <el-select
+            v-model="queryFormData.status"
+            placeholder="请选择状态"
+            clearable
+            style="width: 150px"
+          >
+            <el-option value="运行中" label="运行中" />
+            <el-option value="暂停" label="暂停" />
+            <el-option value="停止" label="停止" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="search" native-type="submit">查询</el-button>
+          <el-button icon="refresh" @click="handleResetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <el-card class="data-table">
       <template #header>
         <div class="card-header">
@@ -92,40 +127,6 @@
                 刷新
               </el-button>
             </div>
-          </div>
-          <div class="search-container">
-            <el-form
-              ref="queryFormRef"
-              :model="queryFormData"
-              :inline="true"
-              label-suffix=":"
-              @submit.prevent="handleQuery"
-            >
-              <el-form-item prop="name" label="任务名称">
-                <el-input
-                  v-model="queryFormData.name"
-                  placeholder="请输入任务名称"
-                  clearable
-                  style="width: 150px"
-                />
-              </el-form-item>
-              <el-form-item prop="status" label="任务状态">
-                <el-select
-                  v-model="queryFormData.status"
-                  placeholder="请选择状态"
-                  clearable
-                  style="width: 150px"
-                >
-                  <el-option value="运行中" label="运行中" />
-                  <el-option value="暂停" label="暂停" />
-                  <el-option value="停止" label="停止" />
-                </el-select>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" icon="search" native-type="submit">查询</el-button>
-                <el-button icon="refresh" @click="handleResetQuery">重置</el-button>
-              </el-form-item>
-            </el-form>
           </div>
         </div>
       </template>

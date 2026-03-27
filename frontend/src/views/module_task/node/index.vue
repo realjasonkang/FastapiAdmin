@@ -1,50 +1,40 @@
 <template>
   <div class="app-container">
-    <el-card class="data-table">
-      <template #header>
-        <div class="card-header">
-          <span>
-            <el-tooltip content="节点类型列表">
-              <QuestionFilled class="w-4 h-4 mx-1" />
-            </el-tooltip>
-            节点类型列表
-          </span>
-          <div class="search-container">
-            <el-form
-              ref="queryFormRef"
-              :model="queryFormData"
-              :inline="true"
-              label-suffix=":"
-              @submit.prevent="handleQuery"
-            >
-              <el-form-item prop="name" label="节点名称">
-                <el-input v-model="queryFormData.name" placeholder="请输入节点名称" clearable />
-              </el-form-item>
-              <el-form-item prop="code" label="节点编码">
-                <el-input v-model="queryFormData.code" placeholder="请输入节点编码" clearable />
-              </el-form-item>
-              <el-form-item class="search-buttons">
-                <el-button
-                  v-hasPerm="['module_task:node:query']"
-                  type="primary"
-                  icon="search"
-                  native-type="submit"
-                >
-                  查询
-                </el-button>
-                <el-button
-                  v-hasPerm="['module_task:node:query']"
-                  icon="refresh"
-                  @click="handleResetQuery"
-                >
-                  重置
-                </el-button>
-              </el-form-item>
-            </el-form>
-          </div>
-        </div>
-      </template>
+    <el-card class="search-container">
+      <el-form
+        ref="queryFormRef"
+        :model="queryFormData"
+        :inline="true"
+        label-suffix=":"
+        @submit.prevent="handleQuery"
+      >
+        <el-form-item prop="name" label="节点名称">
+          <el-input v-model="queryFormData.name" placeholder="请输入节点名称" clearable />
+        </el-form-item>
+        <el-form-item prop="code" label="节点编码">
+          <el-input v-model="queryFormData.code" placeholder="请输入节点编码" clearable />
+        </el-form-item>
+        <el-form-item class="search-buttons">
+          <el-button
+            v-hasPerm="['module_task:node:query']"
+            type="primary"
+            icon="search"
+            native-type="submit"
+          >
+            查询
+          </el-button>
+          <el-button
+            v-hasPerm="['module_task:node:query']"
+            icon="refresh"
+            @click="handleResetQuery"
+          >
+            重置
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
 
+    <el-card class="data-table">
       <div class="data-table__toolbar">
         <div class="data-table__toolbar--left">
           <el-row :gutter="10">
@@ -87,8 +77,8 @@
           ref="dataTableRef"
           v-loading="loading"
           :data="pageTableData"
-          height="calc(100vh - 440px)"
-          max-height="calc(100vh - 440px)"
+          height="calc(100vh - 350px)"
+          max-height="calc(100vh - 350px)"
           border
           stripe
           @selection-change="handleSelectionChange"

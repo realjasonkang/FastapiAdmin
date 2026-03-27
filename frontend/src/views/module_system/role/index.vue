@@ -1,85 +1,70 @@
 <!-- 角色管理 -->
 <template>
   <div class="app-container">
+    <!-- 搜索区域 -->
+    <el-card class="search-container">
+      <el-form
+        ref="queryFormRef"
+        :model="queryFormData"
+        :inline="true"
+        label-suffix=":"
+        @submit.prevent="handleQuery"
+      >
+        <el-form-item prop="name" label="角色名称">
+          <el-input v-model="queryFormData.name" placeholder="请输入角色名称" clearable />
+        </el-form-item>
+        <el-form-item prop="status" label="状态">
+          <el-select
+            v-model="queryFormData.status"
+            placeholder="请选择状态"
+            style="width: 167.5px"
+            clearable
+          >
+            <el-option value="true" label="启用" />
+            <el-option value="false" label="停用" />
+          </el-select>
+        </el-form-item>
+        <!-- 时间范围，收起状态下隐藏 -->
+        <el-form-item v-if="isExpand" prop="start_time" label="创建时间">
+          <DatePicker v-model="dateRange" @update:model-value="handleDateRangeChange" />
+        </el-form-item>
+        <!-- 查询、重置、展开/收起按钮 -->
+        <el-form-item class="search-buttons">
+          <el-button
+            v-hasPerm="['module_system:role:query']"
+            type="primary"
+            icon="search"
+            native-type="submit"
+          >
+            查询
+          </el-button>
+          <el-button
+            v-hasPerm="['module_system:role:query']"
+            icon="refresh"
+            @click="handleResetQuery"
+          >
+            重置
+          </el-button>
+          <!-- 展开/收起 -->
+          <template v-if="isExpandable">
+            <el-link class="ml-3" type="primary" underline="never" @click="isExpand = !isExpand">
+              {{ isExpand ? "收起" : "展开" }}
+              <el-icon>
+                <template v-if="isExpand">
+                  <ArrowUp />
+                </template>
+                <template v-else>
+                  <ArrowDown />
+                </template>
+              </el-icon>
+            </el-link>
+          </template>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <!-- 内容区域 -->
     <el-card class="data-table">
-      <template #header>
-        <div class="card-header">
-          <span>
-            <el-tooltip content="角色管理维护系统的角色和权限。">
-              <QuestionFilled class="w-4 h-4 mx-1" />
-            </el-tooltip>
-            角色管理列表
-          </span>
-        </div>
-        <!-- 搜索区域 -->
-        <div class="search-container">
-          <el-form
-            ref="queryFormRef"
-            :model="queryFormData"
-            :inline="true"
-            label-suffix=":"
-            @submit.prevent="handleQuery"
-          >
-            <el-form-item prop="name" label="角色名称">
-              <el-input v-model="queryFormData.name" placeholder="请输入角色名称" clearable />
-            </el-form-item>
-            <el-form-item prop="status" label="状态">
-              <el-select
-                v-model="queryFormData.status"
-                placeholder="请选择状态"
-                style="width: 167.5px"
-                clearable
-              >
-                <el-option value="true" label="启用" />
-                <el-option value="false" label="停用" />
-              </el-select>
-            </el-form-item>
-            <!-- 时间范围，收起状态下隐藏 -->
-            <el-form-item v-if="isExpand" prop="start_time" label="创建时间">
-              <DatePicker v-model="dateRange" @update:model-value="handleDateRangeChange" />
-            </el-form-item>
-            <!-- 查询、重置、展开/收起按钮 -->
-            <el-form-item class="search-buttons">
-              <el-button
-                v-hasPerm="['module_system:role:query']"
-                type="primary"
-                icon="search"
-                native-type="submit"
-              >
-                查询
-              </el-button>
-              <el-button
-                v-hasPerm="['module_system:role:query']"
-                icon="refresh"
-                @click="handleResetQuery"
-              >
-                重置
-              </el-button>
-              <!-- 展开/收起 -->
-              <template v-if="isExpandable">
-                <el-link
-                  class="ml-3"
-                  type="primary"
-                  underline="never"
-                  @click="isExpand = !isExpand"
-                >
-                  {{ isExpand ? "收起" : "展开" }}
-                  <el-icon>
-                    <template v-if="isExpand">
-                      <ArrowUp />
-                    </template>
-                    <template v-else>
-                      <ArrowDown />
-                    </template>
-                  </el-icon>
-                </el-link>
-              </template>
-            </el-form-item>
-          </el-form>
-        </div>
-      </template>
-
       <!-- 功能区域 -->
       <div class="data-table__toolbar">
         <div class="data-table__toolbar--left">
@@ -169,8 +154,8 @@
           ref="dataTableRef"
           v-loading="loading"
           :data="pageTableData"
-          height="calc(100vh - 440px)"
-          max-height="calc(100vh - 440px)"
+          height="calc(100vh - 350px)"
+          max-height="calc(100vh - 350px)"
           border
           stripe
           @selection-change="handleSelectionChange"
@@ -247,7 +232,7 @@
                   +{{ scope.row.depts.length - 3 }}
                 </el-tag>
               </template>
-              <span v-else style="color: #909399">-</span>
+              <span v-else style="color: var(--el-text-color-placeholder)">-</span>
             </template>
           </el-table-column>
           <el-table-column
@@ -411,7 +396,7 @@
                 {{ dept.name }}
               </el-tag>
             </template>
-            <span v-else style="color: #909399">-</span>
+            <span v-else style="color: var(--el-text-color-placeholder)">-</span>
           </el-descriptions-item>
           <el-descriptions-item label="状态" :span="2">
             <el-tag :type="detailFormData.status ? 'success' : 'danger'">
@@ -514,7 +499,7 @@ import RoleAPI, { RoleTable, RoleForm, TablePageQuery } from "@/api/module_syste
 import { useUserStore } from "@/store";
 import ExportModal from "@/components/CURD/ExportModal.vue";
 import type { IContentConfig } from "@/components/CURD/types";
-import { QuestionFilled, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
+import { ArrowUp, ArrowDown } from "@element-plus/icons-vue";
 import { formatToDateTime } from "@/utils/dateUtil";
 
 const queryFormRef = ref();

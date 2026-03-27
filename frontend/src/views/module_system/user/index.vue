@@ -1,98 +1,89 @@
 <!-- 用户管理 -->
 <template>
   <div class="app-container">
-    <el-row :gutter="12" justify="space-around">
+    <el-row class="page-row" :gutter="12" justify="start">
       <!-- 部门树 -->
-      <el-col :span="4">
-        <DeptTree v-model="queryFormData.dept_id" class="h-820px" @node-click="handleQuery" />
+      <el-col :span="4" class="dept-col">
+        <DeptTree v-model="queryFormData.dept_id" class="w-full h-full" @node-click="handleQuery" />
       </el-col>
 
       <!-- 用户列表 -->
-      <el-col :span="20">
-        <el-card class="data-table">
-          <template #header>
-            <div class="card-header">
-              <span>
-                <el-tooltip content="用户管理系统用户">
-                  <QuestionFilled class="w-4 h-4 mx-1" />
-                </el-tooltip>
-                用户列表
-              </span>
-            </div>
-            <!-- 搜索区域 -->
-            <div class="search-container">
-              <el-form
-                ref="queryFormRef"
-                :model="queryFormData"
-                :inline="true"
-                label-suffix=":"
-                @submit.prevent="handleQuery"
+      <el-col :span="20" class="right-col">
+        <!-- 搜索区域 -->
+        <el-card class="search-container">
+          <el-form
+            ref="queryFormRef"
+            :model="queryFormData"
+            :inline="true"
+            label-suffix=":"
+            @submit.prevent="handleQuery"
+          >
+            <el-form-item prop="username" label="账号">
+              <el-input v-model="queryFormData.username" placeholder="请输入账号" clearable />
+            </el-form-item>
+            <el-form-item prop="name" label="用户名">
+              <el-input v-model="queryFormData.name" placeholder="请输入用户名" clearable />
+            </el-form-item>
+            <el-form-item prop="status" label="状态">
+              <el-select
+                v-model="queryFormData.status"
+                placeholder="请选择状态"
+                style="width: 167.5px"
+                clearable
               >
-                <el-form-item prop="username" label="账号">
-                  <el-input v-model="queryFormData.username" placeholder="请输入账号" clearable />
-                </el-form-item>
-                <el-form-item prop="name" label="用户名">
-                  <el-input v-model="queryFormData.name" placeholder="请输入用户名" clearable />
-                </el-form-item>
-                <el-form-item prop="status" label="状态">
-                  <el-select
-                    v-model="queryFormData.status"
-                    placeholder="请选择状态"
-                    style="width: 167.5px"
-                    clearable
-                  >
-                    <el-option value="0" label="启用" />
-                    <el-option value="1" label="停用" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item v-if="isExpand" prop="created_id" label="创建人">
-                  <UserTableSelect
-                    v-model="queryFormData.created_id"
-                    @confirm-click="handleConfirm"
-                    @clear-click="handleQuery"
-                  />
-                </el-form-item>
-                <!-- 查询、重置、展开/收起按钮 -->
-                <el-form-item class="search-buttons">
-                  <el-button
-                    v-hasPerm="['module_system:user:query']"
-                    type="primary"
-                    icon="search"
-                    native-type="submit"
-                  >
-                    查询
-                  </el-button>
-                  <el-button
-                    v-hasPerm="['module_system:user:query']"
-                    icon="refresh"
-                    @click="handleResetQuery"
-                  >
-                    重置
-                  </el-button>
-                  <!-- 展开/收起 -->
-                  <template v-if="isExpandable">
-                    <el-link
-                      class="ml-3"
-                      type="primary"
-                      underline="never"
-                      @click="isExpand = !isExpand"
-                    >
-                      {{ isExpand ? "收起" : "展开" }}
-                      <el-icon>
-                        <template v-if="isExpand">
-                          <ArrowUp />
-                        </template>
-                        <template v-else>
-                          <ArrowDown />
-                        </template>
-                      </el-icon>
-                    </el-link>
-                  </template>
-                </el-form-item>
-              </el-form>
-            </div>
-          </template>
+                <el-option value="0" label="启用" />
+                <el-option value="1" label="停用" />
+              </el-select>
+            </el-form-item>
+            <el-form-item v-if="isExpand" prop="created_id" label="创建人">
+              <UserTableSelect
+                v-model="queryFormData.created_id"
+                @confirm-click="handleConfirm"
+                @clear-click="handleQuery"
+              />
+            </el-form-item>
+            <!-- 查询、重置、展开/收起按钮 -->
+            <el-form-item class="search-buttons">
+              <el-button
+                v-hasPerm="['module_system:user:query']"
+                type="primary"
+                icon="search"
+                native-type="submit"
+              >
+                查询
+              </el-button>
+              <el-button
+                v-hasPerm="['module_system:user:query']"
+                icon="refresh"
+                @click="handleResetQuery"
+              >
+                重置
+              </el-button>
+              <!-- 展开/收起 -->
+              <template v-if="isExpandable">
+                <el-link
+                  class="ml-3"
+                  type="primary"
+                  underline="never"
+                  @click="isExpand = !isExpand"
+                >
+                  {{ isExpand ? "收起" : "展开" }}
+                  <el-icon>
+                    <template v-if="isExpand">
+                      <ArrowUp />
+                    </template>
+                    <template v-else>
+                      <ArrowDown />
+                    </template>
+                  </el-icon>
+                </el-link>
+              </template>
+            </el-form-item>
+          </el-form>
+        </el-card>
 
+        <div></div>
+        <el-card class="data-table">
           <!-- 功能区域 -->
           <div class="data-table__toolbar">
             <div class="data-table__toolbar--left">
@@ -171,7 +162,7 @@
                   <el-tooltip content="刷新">
                     <el-button
                       v-hasPerm="['module_system:user:query']"
-                      type="default"
+                      type="success"
                       icon="refresh"
                       circle
                       @click="handleRefresh"
@@ -188,8 +179,8 @@
               ref="dataTableRef"
               v-loading="loading"
               :data="pageTableData"
-              height="calc(100vh - 445px)"
-              max-height="calc(100vh - 445px)"
+              height="100%"
+              max-height="100%"
               border
               stripe
               @selection-change="handleSelectionChange"
@@ -236,7 +227,7 @@
               </el-table-column>
               <el-table-column label="创建时间" prop="created_time" min-width="160" />
               <el-table-column label="更新时间" prop="updated_time" min-width="160" />
-              <el-table-column fixed="right" label="操作" align="center" min-width="280">
+              <el-table-column label="操作" fixed="right" align="center" min-width="280">
                 <template #default="scope">
                   <el-button
                     v-hasPerm="['module_system:user:update']"
@@ -552,7 +543,7 @@ import { useUserStore } from "@/store";
 import ImportModal from "@/components/CURD/ImportModal.vue";
 import ExportModal from "@/components/CURD/ExportModal.vue";
 import type { IContentConfig } from "@/components/CURD/types";
-import { QuestionFilled, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
+import { ArrowUp, ArrowDown } from "@element-plus/icons-vue";
 
 const appStore = useAppStore();
 
@@ -968,4 +959,53 @@ onMounted(() => {
 });
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.page-row {
+  flex: 1;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.dept-col {
+  display: flex;
+}
+
+.dept-card {
+  flex: 1;
+}
+
+.right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.right-col :deep(.data-table) {
+  flex: 1;
+  min-height: 0;
+}
+
+.right-col :deep(.data-table__content) {
+  min-height: 0;
+}
+
+.el-row {
+  height: 100%;
+}
+
+.el-col {
+  height: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+</style>

@@ -1,64 +1,54 @@
 <template>
   <div class="app-container">
+    <!-- 搜索区域 -->
+    <el-card class="search-container">
+      <el-form
+        ref="queryRef"
+        :model="queryFormData"
+        :inline="true"
+        label-suffix=":"
+        @submit.prevent="handleQuery"
+      >
+        <el-form-item label="表名称" prop="table_name">
+          <el-input
+            v-model="queryFormData.table_name"
+            placeholder="请输入表名称"
+            clearable
+            style="width: 200px"
+            @keyup.enter="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item label="表描述" prop="table_comment">
+          <el-input
+            v-model="queryFormData.table_comment"
+            placeholder="请输入表描述"
+            clearable
+            style="width: 200px"
+            @keyup.enter="handleQuery"
+          />
+        </el-form-item>
+        <el-form-item class="search-buttons">
+          <el-button
+            v-hasPerm="['module_generator:gencode:query']"
+            type="primary"
+            icon="search"
+            native-type="submit"
+          >
+            查询
+          </el-button>
+          <el-button
+            v-hasPerm="['module_generator:gencode:query']"
+            icon="refresh"
+            @click="handleRefresh"
+          >
+            重置
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <!-- 内容区域 -->
     <el-card class="data-table">
-      <template #header>
-        <div class="card-header">
-          <span>
-            <el-tooltip content="生成代码">
-              <QuestionFilled class="w-4 h-4 mx-1" />
-            </el-tooltip>
-            生成代码
-          </span>
-        </div>
-        <!-- 搜索区域 -->
-        <div class="search-container">
-          <el-form
-            ref="queryRef"
-            :model="queryFormData"
-            :inline="true"
-            label-suffix=":"
-            @submit.prevent="handleQuery"
-          >
-            <el-form-item label="表名称" prop="table_name">
-              <el-input
-                v-model="queryFormData.table_name"
-                placeholder="请输入表名称"
-                clearable
-                style="width: 200px"
-                @keyup.enter="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item label="表描述" prop="table_comment">
-              <el-input
-                v-model="queryFormData.table_comment"
-                placeholder="请输入表描述"
-                clearable
-                style="width: 200px"
-                @keyup.enter="handleQuery"
-              />
-            </el-form-item>
-            <el-form-item class="search-buttons">
-              <el-button
-                v-hasPerm="['module_generator:gencode:query']"
-                type="primary"
-                icon="search"
-                native-type="submit"
-              >
-                查询
-              </el-button>
-              <el-button
-                v-hasPerm="['module_generator:gencode:query']"
-                icon="refresh"
-                @click="handleRefresh"
-              >
-                重置
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-      </template>
-
       <!-- 功能区域 -->
       <div class="data-table__toolbar">
         <div class="data-table__toolbar--left">
@@ -142,8 +132,8 @@
           v-loading="loading"
           :data="tableList"
           class="data-table__content"
-          height="calc(100vh - 440px)"
-          max-height="calc(100vh - 440px)"
+          height="calc(100vh - 350px)"
+          max-height="calc(100vh - 350px)"
           border
           stripe
           @selection-change="handleTableSelectionChange"
