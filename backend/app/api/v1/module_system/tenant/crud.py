@@ -28,18 +28,6 @@ class TenantCRUD(CRUDBase[TenantModel, TenantCreateSchema, TenantUpdateSchema]):
     ) -> Sequence[TenantModel]:
         return await self.list(search=search, order_by=order_by, preload=preload)
 
-    async def create_crud(self, data: TenantCreateSchema) -> TenantModel | None:
-        return await self.create(data=data)
-
-    async def update_crud(self, id: int, data: TenantUpdateSchema) -> TenantModel | None:
-        return await self.update(id=id, data=data)
-
-    async def delete_crud(self, ids: list[int]) -> None:
-        await self.delete(ids=ids)
-
-    async def set_available_crud(self, ids: list[int], status: str) -> None:
-        await self.set(ids=ids, status=status)
-
     async def page_crud(
         self,
         offset: int,
@@ -57,3 +45,17 @@ class TenantCRUD(CRUDBase[TenantModel, TenantCreateSchema, TenantUpdateSchema]):
             out_schema=out_schema or TenantOutSchema,
             preload=preload or [],
         )
+
+    async def create_crud(self, data: TenantCreateSchema) -> TenantModel | None:
+        return await self.create(data=data)
+
+    async def update_crud(self, id: int, data: TenantUpdateSchema) -> TenantModel | None:
+        return await self.update(id=id, data=data)
+
+    async def delete_crud(self, ids: list[int]) -> None:
+        await self.delete(ids=ids)
+
+    async def set_available_crud(self, ids: list[int], status: str) -> None:
+        await self.set(ids=ids, status=status)
+
+    

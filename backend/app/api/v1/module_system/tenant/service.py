@@ -5,7 +5,6 @@ from app.api.v1.module_system.auth.schema import AuthSchema
 from app.api.v1.module_system.dept.crud import DeptCRUD
 from app.api.v1.module_system.position.crud import PositionCRUD
 from app.api.v1.module_system.role.crud import RoleCRUD
-from app.api.v1.module_system.tenant.tools.access import ensure_platform_tenant_management
 from app.api.v1.module_system.user.crud import UserCRUD
 from app.core.base_schema import BatchSetAvailable
 from app.core.exceptions import CustomException
@@ -13,7 +12,6 @@ from app.core.logger import log
 from app.utils.hash_bcrpy_util import PwdUtil
 
 from .crud import TenantCRUD
-from .model import TenantModel
 from .schema import TenantCreateSchema, TenantOutSchema, TenantQueryParam, TenantUpdateSchema
 
 
@@ -22,7 +20,6 @@ class TenantService:
 
     @classmethod
     async def detail_service(cls, auth: AuthSchema, id: int) -> dict:
-        ensure_platform_tenant_management(auth)
         obj = await TenantCRUD(auth).get_by_id_crud(id=id)
         if not obj:
             raise CustomException(msg="租户不存在")
@@ -47,7 +44,6 @@ class TenantService:
 
     @classmethod
     async def create_service(cls, auth: AuthSchema, data: TenantCreateSchema) -> dict:
-        ensure_platform_tenant_management(auth)
         if await TenantCRUD(auth).get(name=data.name):
             raise CustomException(msg="创建失败，名称已存在")
         if await TenantCRUD(auth).get(code=data.code):
@@ -56,12 +52,11 @@ class TenantService:
         tenant_obj = await TenantCRUD(auth).create_crud(data=data)
         if not tenant_obj:
             raise CustomException(msg="创建租户失败")
-        await cls._create_tenant_admin_user(auth, tenant_obj)
-        await auth.db.refresh(tenant_obj)
-        return TenantOutSchema.model_validate(tenant_obj).model_dump()
-
-    @classmethod
-    async def _create_tenant_admin_user(cls, auth: AuthSchema, tenant_obj: TenantModel) -> None:
+        
+        # 创建租户初始管理员
+        # 1. 生成初始管理员用户名
+        # 2. 检查用户名是否已存在
+        # 3. 创建初始管理员用户
         username = f"{tenant_obj.code}_admin"
         if await UserCRUD(auth).get_by_username_crud(username=username):
             raise CustomException(msg=f"初始管理员用户名已存在: {username}，请更换租户编码后重试")
@@ -91,9 +86,11 @@ class TenantService:
             f"为租户[{tenant_obj.name}]创建初始管理员成功，用户名: {username}，临时密码: {password}"
         )
 
+        await auth.db.refresh(tenant_obj)
+        return TenantOutSchema.model_validate(tenant_obj).model_dump()
+
     @classmethod
     async def update_service(cls, auth: AuthSchema, id: int, data: TenantUpdateSchema) -> dict:
-        ensure_platform_tenant_management(auth)
         obj = await TenantCRUD(auth).get_by_id_crud(id=id)
         if not obj:
             raise CustomException(msg="租户不存在")
@@ -120,7 +117,6 @@ class TenantService:
 
     @classmethod
     async def delete_service(cls, auth: AuthSchema, ids: list[int]) -> None:
-        ensure_platform_tenant_management(auth)
         if not ids:
             raise CustomException(msg="删除失败，删除对象不能为空")
         if 1 in ids:
@@ -147,7 +143,6 @@ class TenantService:
 
     @classmethod
     async def set_available_service(cls, auth: AuthSchema, data: BatchSetAvailable) -> None:
-        ensure_platform_tenant_management(auth)
         if data.status == "1" and 1 in data.ids:
             raise CustomException(msg="系统租户不允许禁用")
         await TenantCRUD(auth).set_available_crud(ids=data.ids, status=data.status)

@@ -792,7 +792,6 @@ class GenTableService:
                 order=9999,
                 permission=f"{permission_prefix}:query",
                 icon="menu",
-                # route_name 使用模块名（对齐 module_example/demo：/example/demo）
                 route_name=CamelCaseUtil.snake_to_camel(_mn),
                 route_path=_route_path,
                 component_path=_component_path,
@@ -918,6 +917,9 @@ class GenTableService:
 
         await _write_templates(render_info[0], render_info[2], gen_table_schema)
         if gen_table_schema.sub and gen_table_schema.sub_table:
+            # 子表与主表同分系统，使用自己的模块名，实现同级目录
+            gen_table_schema.sub_table.package_name = gen_table_schema.package_name
+            # 确保子表使用自己的模块名，与主表同级目录
             sub_ctx = Jinja2TemplateUtil.prepare_sub_render_context(
                 gen_table_schema, gen_table_schema.sub_table
             )
@@ -1072,7 +1074,7 @@ class GenTableService:
                             column.id
                         ])
 
-            # 主子表：若子表也已导入生成器，则一并同步子表配置（更接近 RuoYi 体验）
+            # 主子表：若子表也已导入生成器，则一并同步子表配置
             sn = (table.sub_table_name or "").strip()
             fk = (table.sub_table_fk_name or "").strip()
             if _sync_sub and sn and fk:
@@ -1140,7 +1142,7 @@ class GenTableService:
             gen_table.sub = True
             gen_table.sub_table = sub_cfg
             gen_table.master_sub_hint = (
-                "主子表已启用：子表字段来自「已导入的子表配置」（更接近 RuoYi 的方式）。"
+                "主子表已启用：子表字段来自「已导入的子表配置」（更可控、可复用）。"
                 "如需调整子表字段，请在列表中打开该子表进行配置。"
             )
             return
@@ -1203,7 +1205,7 @@ class GenTableService:
         gen_table.sub_table = sub
         gen_table.master_sub_hint = (
             "主子表已启用：当前子表仅从数据库结构读取（只读）。"
-            f"若要像 RuoYi 那样可配置子表字段，请先在「导入」中把子表「{sub_name_raw}」也导入生成器。"
+            f"若想可配置子表字段，请先在「导入」中把子表「{sub_name_raw}」也导入生成器。"
         )
 
     @classmethod

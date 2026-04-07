@@ -25,11 +25,11 @@ html :root {
   --el-bg-color-page: var(--el-bg-color);
   --el-bg-color-overlay: #ffffff;
   --el-fill-color: #e2e8f0;
-  --el-fill-color-light: color-mix(in srgb, var(--el-color-primary, #4080ff) 7%, #f1f5f9 93%);
+  --el-fill-color-light: color-mix(in srgb, var(--el-color-primary, #4080ff) 3%, #f1f5f9 93%);
   /* 亮色：分割线偏淡（主色比例略降、灰底偏浅） */
   --el-border-color: color-mix(in srgb, var(--el-color-primary, #4080ff) 6%, #e2e8f0 94%);
   --el-border-color-light: color-mix(in srgb, var(--el-color-primary, #4080ff) 7.5%, #eef2f7 92.5%);
-  --el-border-color-lighter: color-mix(in srgb, var(--el-color-primary, #4080ff) 30%, #f1f5f9 92%);
+  --el-border-color-lighter: color-mix(in srgb, var(--el-color-primary, #4080ff) 15%, #f1f5f9 92%);
   --el-border-color-extra-light: color-mix(
     in srgb,
     var(--el-color-primary, #4080ff) 5.5%,
@@ -71,7 +71,7 @@ html :root {
   );
   --el-table-theme-stripe-bg: color-mix(
     in srgb,
-    var(--el-color-primary, #4080ff) 3%,
+    var(--el-color-primary, #4080ff) 4%,
     var(--el-bg-color-overlay) 97%
   );
   /*
@@ -79,7 +79,7 @@ html :root {
    */
   --el-table-theme-border-color: color-mix(
     in srgb,
-    var(--el-color-primary, #4080ff) 20.5%,
+    var(--el-color-primary, #4080ff) 15.5%,
     #eef2f7 95.5%
   );
 
