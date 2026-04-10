@@ -1,10 +1,10 @@
 <template>
-  <el-dialog
+  <EnhancedDialog
     v-model="dialogVisible"
     width="500px"
     max-height="170px"
-    class="v-lock-dialog"
     :title="dialogTitle"
+    class="v-lock-dialog"
   >
     <div class="lock-dialog-content">
       <!-- 头像 -->
@@ -27,7 +27,7 @@
     <template #footer>
       <el-button type="primary" @click="handleLock">{{ t("navbar.lock") }}</el-button>
     </template>
-  </el-dialog>
+  </EnhancedDialog>
 </template>
 
 <script setup lang="ts">
