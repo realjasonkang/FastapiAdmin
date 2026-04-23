@@ -69,10 +69,19 @@ class GenUtils:
             raise ValueError("业务表ID不能为空")
         column.table_id = table.id
         column.python_field = cls.to_camel_case(column_name)
-        # 只有当python_type为None时才设置默认类型
-        column.python_type = StringUtil.get_mapping_value_by_key_ignore_case(
-            GenConstant.DB_TO_PYTHON, data_type
-        )
+        
+        # 特殊处理几何类型，根据数据库类型选择不同的映射
+        from app.config.setting import settings
+        if data_type in ["point", "line", "linestring", "polygon", "multipoint", "multilinestring", "multipolygon", "geometrycollection", "geometry"]:
+            if settings.DATABASE_TYPE == "mysql":
+                column.python_type = "bytes"
+            elif settings.DATABASE_TYPE == "postgres":
+                column.python_type = "list"
+        else:
+            # 只有当python_type为None时才设置默认类型
+            column.python_type = StringUtil.get_mapping_value_by_key_ignore_case(
+                GenConstant.DB_TO_PYTHON, data_type
+            )
 
         if column.column_length is None:
             column.column_length = ""
@@ -261,8 +270,8 @@ class GenUtils:
         if column_type.lower().startswith("tinyint(1)"):
             return "boolean"
 
-        # 处理PostgreSQL数组类型（如 integer[], text[]）
-        if "[]" in column_type:
+        # 处理PostgreSQL数组类型（如 integer[], text[] 或 ARRAY[INTEGER]）
+        if "[]" in column_type or column_type.upper().startswith("ARRAY["):
             return "array"
 
         # 提取基本类型：

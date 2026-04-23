@@ -721,7 +721,7 @@ class GenConstant:
             "cidr": "str",
             "macaddr": "str",
 
-            # PostgreSQL 几何类型（覆盖MySQL的映射）
+            # PostgreSQL 几何类型
             "point": "list",
             "line": "list",
             "lseg": "list",

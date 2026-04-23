@@ -32,8 +32,8 @@ class ChatSessionCRUD:
         db_uri = settings.DB_URI
 
         db_mapping = {
-            "mysql": lambda: MySQLDb(db_url=db_uri),
-            "postgres": lambda: PostgresDb(db_url=db_uri),
+            "mysql": lambda: MySQLDb(db_url=db_uri, db_schema=settings.DATABASE_NAME, create_schema=False),
+            "postgres": lambda: PostgresDb(db_url=db_uri, db_schema="public", create_schema=False),
             "sqlite": lambda: SqliteDb(db_file=db_uri.replace("sqlite:///", "")),
         }
 

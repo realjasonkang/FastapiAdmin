@@ -732,6 +732,23 @@ class Jinja2TemplateUtil:
         sqlalchemy_type = StringUtil.get_mapping_value_by_key_ignore_case(
             GenConstant.DB_TO_SQLALCHEMY, column_type
         )
+        
+        # 特殊处理PostgreSQL类型
+        if settings.DATABASE_TYPE == "postgres":
+            if column_type.upper() == "BOOLEAN":
+                return "Boolean"
+            elif column_type.upper() == "REAL":
+                return "Float"
+            elif column_type.upper() == "DOUBLE PRECISION":
+                return "Float"
+            elif column_type.upper() == "TIMESTAMP":
+                return "DateTime"
+            elif column_type.upper() == "JSONB":
+                return "JSONB"
+            elif column_type.upper() == "UUID":
+                return "Uuid"
+            elif column_type.upper() == "BYTEA":
+                return "LargeBinary"
 
         # get_mapping_value_by_key_ignore_case 未命中时返回 ""，须与 None 同样视为未匹配
         if not sqlalchemy_type and "(" in column_type:
@@ -747,8 +764,8 @@ class Jinja2TemplateUtil:
             # 如果是字符串类型且包含括号参数，保持原参数
             if sqlalchemy_type in ["String", "CHAR"]:
                 sqlalchemy_type += "(" + column_type_list[1]
-            # 如果是Numeric类型且包含括号参数，保持原参数
-            elif sqlalchemy_type == "Numeric":
+            # 如果是Numeric或DECIMAL类型且包含括号参数，保持原参数
+            elif sqlalchemy_type in ["Numeric", "DECIMAL"]:
                 sqlalchemy_type += "(" + column_type_list[1]
         elif not sqlalchemy_type:
             # 处理没有括号的类型
